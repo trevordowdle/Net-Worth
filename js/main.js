@@ -21,18 +21,11 @@ Cycle.run(main, drivers);
 function headerModule(sources){
 
   let vtree$;
-  
-/*
-  let getRandom$ = sources.DOM.select('.hello').events('click').map(ev => {
-    return Math.random(); 
-  }).startWith(""); 
-*/
     
   vtree$ = Rx.Observable.of(
             header([
               nav([
                 div('.nav-wrapper',[
-                    /*span('carouselHere')*/
                     carouselModule(sources).DOM
                 ])      
               ]),
@@ -51,15 +44,9 @@ function sideNavModule(sources){
   let vtree$;
     
   let getClickText$ = sources.DOM.select('.collapsible-header').events('click').map(ev => {
-    
     let $target = $(ev.currentTarget);
     $target.toggleClass('active');
-    accordionOpen($target);
-    /*
-    let $target = $(ev.currentTarget.parentElement);
-    $target.parent().find('li').removeClass('active');
-    $target.addClass('active');
-    */   
+    accordionOpen($target);  
   }).startWith('');
 
   vtree$ = getClickText$.map(()=>
@@ -123,32 +110,58 @@ function sideNavModule(sources){
 
 function carouselModule(sources){
 
-  let vtree$;
+  let thing;
 
+  let watchCarousel$ = sources.DOM.select('.carousel').observable.subscribe((el)=>{
+    if(el.length){
+        thing = testCarousel($(el));
+        watchCarousel$.dispose();
+    }   
+  });
+    
+  let clickStreamRight$ = sources.DOM.select('.carousel .carousel-item .right').events('click').map(ev => {
+        return 1;    
+  });
+    
+  let clickStreamLeft$ = sources.DOM.select('.carousel .carousel-item .left').events('click').map(ev => {
+        return -1;   
+  });
+    
+  Rx.Observable.merge(clickStreamRight$, clickStreamLeft$).subscribe((indicator)=>{
+        thing.carousel('next',indicator);
+        //$('.carousel').trigger('carouselNext', [indicator]);                                                                           
+  });
+
+  let vtree$;
   vtree$ = Rx.Observable.of(
-            div('.carousel .carousel-slider .center',[
-              div('.carousel-item .red .white-text',[
-                  h2('June 2016')
+            div('.carousel .carousel-slider .center .noselect',[
+              div('.carousel-item .red .white-text',{attrs:{data:{month:6,year:2016}}},[
+                  h2('June 2016'),
+                  i('.material-icons .arrow .left','keyboard_arrow_left'),
+                  i('.material-icons .arrow .right','keyboard_arrow_right')
               ]),
-              div('.carousel-item .amber .white-text',[
-                  h2('July 2016')
+              div('.carousel-item .amber .white-text',{attrs:{data:{month:7,year:2016}}},[
+                  h2('July 2016'),
+                  i('.material-icons .arrow .left','keyboard_arrow_left'),
+                  i('.material-icons .arrow .right','keyboard_arrow_right')
               ]),
-              div('.carousel-item .green .white-text',[
-                  h2('August 2016')
+              div('.carousel-item .green .white-text',{attrs:{data:{month:8,year:2016}}},[
+                  h2('August 2016'),
+                  i('.material-icons .arrow .left','keyboard_arrow_left'),
+                  i('.material-icons .arrow .right','keyboard_arrow_right')
               ]),
-              div('.carousel-item .blue .white-text',[
-                  h2('September 2016')
+              div('.carousel-item .blue .white-text',{attrs:{data:{month:9,year:2016}}},[
+                  h2('September 2016'),
+                  i('.material-icons .arrow .left','keyboard_arrow_left'),
+                  i('.material-icons .arrow .right','keyboard_arrow_right')
               ]),
-              div('.carousel-item .purple .white-text',[
-                  h2('October 2016')
+              div('.carousel-item .purple .white-text',{attrs:{data:{month:10,year:2016}}},[
+                  h2('October 2016'),
+                  i('.material-icons .arrow .left','keyboard_arrow_left'),
+                  i('.material-icons .arrow .right','keyboard_arrow_right')
               ])
             ])
            );
-    
-  vtree$.subscribe(()=>{
-      //$('.carousel.carousel-slider').carousel({full_width: true});
-      //document not ready yet
-  }); 
     
   return {
     DOM: vtree$
