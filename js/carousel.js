@@ -1,6 +1,127 @@
-var testCarousel;
+var carouselModule;
 
 (function ($) {
+    
+   carouselModule = function(sources){
+
+      let carousel, vtree$, watchCarousel$, clickStreamRight$, clickStreamLeft$, carouselItems;
+
+      watchCarousel$ = sources.DOM.select('.carousel')
+                       .observable
+                       .subscribe((el)=>{
+                            if(el.length){
+                                carousel = $(el).carousel();
+                                watchCarousel$.dispose();
+                            }   
+                        });
+
+      clickStreamRight$ = sources.DOM.select('.carousel .carousel-item .right')
+                          .events('click')
+                          .map(ev => 1);
+
+      clickStreamLeft$ = sources.DOM.select('.carousel .carousel-item .left')
+                         .events('click')
+                         .map(ev => -1);
+
+      Rx.Observable.merge(clickStreamRight$, clickStreamLeft$)
+                   .subscribe((indicator)=>{
+                       carousel.carousel('next',indicator);         
+                   });
+       
+      carouselItems = getCarouselDateListStart();
+
+      vtree$ = Rx.Observable.of(
+                div('.carousel .carousel-slider .center .noselect',
+                    carouselItems.map((data)=>{
+                        return carouselItemTree$(sources,{month:data.month,year:data.year,title:data.monthString,color:data.color}).DOM;     
+                    })
+                )
+               );
+
+      return {
+        DOM: vtree$
+      };
+  }
+   
+  function carouselItemTree$(sources,info){
+      let vtree$;
+      vtree$ = Rx.Observable.of(
+        div('.carousel-item .' + info.color + ' .white-text',{attrs:{data:{month:info.month,year:info.year}}},[
+          h2(info.title),
+          i('.material-icons .arrow .left','keyboard_arrow_left'),
+          i('.material-icons .arrow .right','keyboard_arrow_right')
+        ])    
+      );
+      
+      return {
+          DOM: vtree$
+      }
+  }
+    
+  let monthMap = {
+      1: 'January',
+      2: 'Feburary',
+      3: 'March',
+      4: 'April',
+      5: 'May',
+      6: 'June',
+      7: 'July',
+      8: 'August',
+      9: 'September',
+      10: 'October',
+      11: 'November',
+      12: 'Decemeber'
+  }
+  
+  let colorArray = ['red','amber','green','blue','purple','indigo','lime','cyan','teal'];
+    
+  function getCarouselDateListStart(dateString){
+      let dateObj = getDateObject(dateString), dates = [], i;
+      
+      dates.push(getCarouselDate(dateObj,0));
+      
+      for(i = 1;i <= 4;i++){
+        dateObj.date.setMonth(dateObj.date.getMonth()+1);
+        dates.push(getCarouselDate(dateObj,i));
+      }
+      
+      dateObj.date.setMonth(dateObj.date.getMonth()-9);
+      
+      for(i = 5;i <= 8;i++){
+        dateObj.date.setMonth(dateObj.date.getMonth()+1);
+        dates.push(getCarouselDate(dateObj,i));
+      }
+
+      return dates;
+  }
+    
+  function getCarouselDateList(dateString){
+      let dateObj = getDateObject(dateString), dates = [], i;
+      
+      dates.push(getCarouselDate(dateObj,0));
+      
+      for(i = 1;i <= 4;i++){
+        dateObj.date.setMonth(dateObj.date.getMonth()+1);
+        dates.push(getCarouselDate(dateObj,i));
+      }
+      
+      dateObj.date.setMonth(dateObj.date.getMonth()-9);
+      
+      for(i = 5;i <= 8;i++){
+        dateObj.date.setMonth(dateObj.date.getMonth()+1);
+        dates.push(getCarouselDate(dateObj,i));
+      }
+
+      return dates;
+  }
+  
+  function getCarouselDate(dateObj,i){
+      month = dateObj.date.getMonth()+1;
+      year = dateObj.date.getFullYear(); 
+      return {'year':year,'month':month,'monthString':monthMap[month] + ' ' + year,'color':colorArray[i]};
+  }
+   
+  //functionality
 
   var methods = {
 
@@ -15,10 +136,7 @@ var testCarousel;
       };
       options = $.extend(defaults, options);
 
-      var timeFrameInfo = {
-        month: 6,
-        year: 2016
-      }
+      var timeFrameInfo = getDateObject();
 
       return this.each(function() {
 
@@ -51,20 +169,18 @@ var testCarousel;
           }
         }
 
-
         view.addClass('initialized');
         pressed = false;
         offset = target = 0;
         images = [];
         item_width = view.find('.carousel-item').first().innerWidth();
-        dim = item_width * 2 + options.padding;
+        dim = (item_width * 2 + options.padding);
 
         view.find('.carousel-item').each(function (i) {
           images.push($(this)[0]);
         });
 
         count = images.length;
-
 
         function setupEvents() {
           if (typeof window.ontouchstart !== 'undefined') {
@@ -124,16 +240,33 @@ var testCarousel;
           // Don't show wrapped items.
           if (!options.no_wrap || (center >= 0 && center < count)) {
             el = images[wrap(center)];
-            if(final){
-              //debugger;
+              
+            if(final){   
+                console.log('final'); // other logic here.
             }
-            if(final && timeFrameInfo.month !== el.attrs.data.month || timeFrameInfo.year !== el.attrs.data.year){
+              
+            if(timeFrameInfo.month !== el.attrs.data.month || timeFrameInfo.year !== el.attrs.data.year){
+                let $el, indexOffset, updateEl, temp;
                 timeFrameInfo.month = el.attrs.data.month;
                 timeFrameInfo.year = el.attrs.data.year;
-                //console.log(el.attrs.data.month + ' ' + el.attrs.data.year);
-                //Repopulate carousel slide text based on current year.
-                console.log('final');
+                
+                let dateList = getCarouselDateList(timeFrameInfo.month+'/01/'+timeFrameInfo.year); // expecting 0 index.
+                
+                $el = $(el);
+                indexOffset = $(el).index();
+                
+                for(i = 0; i < indexOffset; i++){
+                    temp = dateList.pop();
+                    dateList.unshift(temp);    
+                }
+                
+                $(el.parentElement).find('.carousel-item').map((index,element)=>{
+                    element.attrs.data.month = dateList[index].month;
+                    element.attrs.data.year = dateList[index].year;
+                    element.firstChild.innerText = monthMap[element.attrs.data.month] + ' ' + element.attrs.data.year;
+                });
             }
+              
             el.style[xform] = alignment +
               ' translateX(' + (-delta / 2) + 'px)' +
               ' translateX(' + (dir * options.shift * tween * i) + 'px)' +
@@ -366,8 +499,6 @@ var testCarousel;
           return true;
         });
 
-
-
         window.onresize = scroll;
 
         setupEvents();
@@ -418,10 +549,11 @@ var testCarousel;
     }
   };
 
-    testCarousel = function($el) {
-        if($el.length){
-            return methods.init.apply($el);
+    $.fn.carousel = function(arg,indicator) {
+        if(methods[arg]){
+            return methods[arg].apply(this,[indicator]);    
         }
+        return methods.init.apply(this);
     }; // Plugin end
     
 }( jQuery ));
