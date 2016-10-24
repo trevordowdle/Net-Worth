@@ -6,7 +6,6 @@ function modalModule(sources){
     
   vtree$ = Rx.Observable.of(
         div([
-            a('.waves-effect .waves-light .btn .modal-trigger',{href:'#modal1'},'Modal'),
             div('#modal1 .modal',[
               div('.modal-content',[
                 h4('Modal Header'),

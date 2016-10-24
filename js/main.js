@@ -3,11 +3,15 @@ const isolate = CycleIsolate;
   
 function page(sources){ 
 
-  let helloTree$ = isolate(headerModule)(sources).DOM;  
- 
-  vtree$ = helloTree$
-
-  vtree$ = mainModule(sources).DOM;
+  let headerTree$ = isolate(headerModule)(sources).DOM;
+  let mainTree$ = mainModule(sources).DOM;
+    
+  vtree$ = Rx.Observable.combineLatest(headerTree$, mainTree$, (headerTree, mainTree) =>
+                                        div([
+                                            headerTree,
+                                            mainTree
+                                        ])
+                                      );
   
   return {
       DOM: vtree$
@@ -51,8 +55,7 @@ function mainModule(sources){
                     div('.col .s12 .m8 .l12',[
                         br(),
                         p('Hello World!'),
-                        br(),
-                        modalModule(sources).DOM
+                        br()
                     ])
                 ])
             ])

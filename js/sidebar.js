@@ -3,63 +3,74 @@ function sideNavModule(sources){
 
   let vtree$;
     
-  let getClickText$ = sources.DOM.select('.collapsible-header').events('click').map(ev => {
+  let getClickSideBar$ = sources.DOM.select('.collapsible-header').events('click').map(ev => {
     let $target = $(ev.currentTarget);
     $target.toggleClass('active');
     accordionOpen($target);  
   }).startWith('');
+    
+  let getClickAdd$ = sources.DOM.select('.btn-floating.green').events('click').map(ev => {
+    $('#modal1').openModal();     
+  });
+    
+  let getClicks$ = getClickSideBar$.merge(getClickAdd$);
+    
+  
 
-  vtree$ = getClickText$.map(()=>
-            ul('.side-nav .fixed #nav-mobile',[
-                li('.side-nav-top',[
-                    span('#logo .noselect',[
-                        img({src:'https://material.google.com/static/images/nav_google_logo.svg'})
+  vtree$ = getClicks$.map(()=>
+            div([
+                ul('.side-nav .fixed #nav-mobile',[
+                    li('.side-nav-top',[
+                        span('#logo .noselect',[
+                            img({src:'https://material.google.com/static/images/nav_google_logo.svg'})
+                        ]),
+                        a('.btn-floating .btn-large .waves-effect .waves-light .green',[
+                            i('.material-icons','add')    
+                        ])
                     ]),
-                    a('.btn-floating .btn-large .waves-effect .waves-light .green',[
-                        i('.material-icons','add')    
-                    ])
-                ]),
-                li('.no-padding',[
-                    ul('.collapsible .collapsible-accordion',[
-                        li('.bold',[
-                            a('.collapsible-header .waves-effect .waves-teal','CSS'),
-                            div('.collapsible-body',[
-                                ul([
-                                    li([
-                                        a('Color'),
-                                        a('Grid'),
-                                        a('Helplers')
+                    li('.no-padding',[
+                        ul('.collapsible .collapsible-accordion',[
+                            li('.bold',[
+                                a('.collapsible-header .waves-effect .waves-teal','CSS'),
+                                div('.collapsible-body',[
+                                    ul([
+                                        li([
+                                            a('Color'),
+                                            a('Grid'),
+                                            a('Helplers')
+                                        ])
                                     ])
                                 ])
-                            ])
-                        ]),
-                        li('.bold',[
-                            a('.collapsible-header .waves-effect .waves-teal','Components'),
-                            div('.collapsible-body',[
-                                ul([
-                                    li([
-                                        a('Badges'),
-                                        a('Buttons'),
-                                        a('Breadcrumbs')
+                            ]),
+                            li('.bold',[
+                                a('.collapsible-header .waves-effect .waves-teal','Components'),
+                                div('.collapsible-body',[
+                                    ul([
+                                        li([
+                                            a('Badges'),
+                                            a('Buttons'),
+                                            a('Breadcrumbs')
+                                        ])
                                     ])
                                 ])
-                            ])
-                        ]),
-                        li('.bold',[
-                            a('.collapsible-header .waves-effect .waves-teal','Javascript'),
-                            div('.collapsible-body',[
-                                ul([
-                                    li([
-                                        a('Carousel'),
-                                        a('Collapsible'),
-                                        a('Dialogs')
+                            ]),
+                            li('.bold',[
+                                a('.collapsible-header .waves-effect .waves-teal','Javascript'),
+                                div('.collapsible-body',[
+                                    ul([
+                                        li([
+                                            a('Carousel'),
+                                            a('Collapsible'),
+                                            a('Dialogs')
+                                        ])
                                     ])
                                 ])
                             ])
                         ])
                     ])
+                  ]),
+                  modalModule(sources).DOM
                 ])
-              ])
       );
     
   return {
