@@ -3,13 +3,24 @@
 function modalModule(sources){
 
   let vtree$;
+
+  //TODO: implement the input element animation 
     
   vtree$ = Rx.Observable.of(
         div([
             div('#modal1 .modal',[
               div('.modal-content',[
                 h4('Modal Header'),
-                p('A bunch of text')  
+                div('.row',[
+                  div('.col .s12',[
+                    div('.row',[
+                     div('.input-field .col .s6',[
+                        input('#name .validate',{type:'text'}),
+                        label('Name'/*,{for:"name"}*/)
+                      ])
+                    ])
+                  ])
+                ]) 
               ]),
               div('.modal-footer',[
                 a('.modal-action .modal-close .waves-effect .waves-green .btn-flat','Agree')
