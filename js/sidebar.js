@@ -6,7 +6,7 @@ function sideNavModule(sources){
   let getClickSideBar$ = sources.DOM.select('.collapsible-header').events('click').map(ev => {
     let $target = $(ev.currentTarget);
     $target.toggleClass('active');
-    accordionOpen($target);  
+    accordionOpen($target); 
   }).startWith('');
     
   let getClickAdd$ = sources.DOM.select('.btn-floating.green').events('click').map(ev => {
@@ -68,8 +68,7 @@ function sideNavModule(sources){
                             ])
                         ])
                     ])
-                  ]),
-                  modalModule(sources).DOM
+                  ])
                 ])
       );
     
@@ -153,6 +152,12 @@ jQuery.extend( jQuery.easing,
 {
 	easeOutQuart: function (x, t, b, c, d) {
 		return -c * ((t=t/d-1)*t*t*t - 1) + b;
+	},
+    easeOutSine: function (x, t, b, c, d) {
+		return c * Math.sin(t/d * (Math.PI/2)) + b;
+	},
+    easeOutCubic: function (x, t, b, c, d) {
+		return c*((t=t/d-1)*t*t + 1) + b;
 	}
 });
 

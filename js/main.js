@@ -1,12 +1,14 @@
-const {label, input, hr, div, h1, h4, a, span, makeDOMDriver, button, p, br, h2, header, nav, ul, li, img, i, main} = CycleDOM;
+const {label, input, hr, div, h1, h4, a, span, makeDOMDriver, button, p, br, h2, header, nav, ul, li, img, i, main, select, option} = CycleDOM;
 const isolate = CycleIsolate; 
   
 function page(sources){ 
 
   let headerTree$ = isolate(headerModule)(sources).DOM;
   let mainTree$ = mainModule(sources).DOM;
+
+  //.modal-action
     
-  vtree$ = Rx.Observable.combineLatest(headerTree$, mainTree$, (headerTree, mainTree) =>
+  let vtree$ = Rx.Observable.combineLatest(headerTree$, mainTree$, (headerTree, mainTree) =>
                                         div([
                                             headerTree,
                                             mainTree
@@ -35,7 +37,8 @@ function headerModule(sources){
                     carouselModule(sources).DOM
                 ])      
               ]),
-              sideNavModule(sources).DOM
+              sideNavModule(sources).DOM,
+              modalModule(sources).DOM
             ])
            );  
   return {
