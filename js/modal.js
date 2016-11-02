@@ -2,6 +2,10 @@
 
 function modalModule(sources){
 
+  /*
+    <a>Badges - <span class="green-text">$115.00</span></a>
+  */
+
   let vtree$, entry = {}, invalid;
 
     let modalAdd$ = sources.DOM.select('.modal .modal-action').events('click').map((ev)=>{
@@ -21,6 +25,8 @@ function modalModule(sources){
         console.log('invalid');
       }
       else{
+        //TODO - Dollar formatting, red for debt, make sure asset is positive value debt is negative.
+        $('.'+entry.type.toLowerCase()).next().find('ul li').append('<a>' + entry.name + ' - <span style="font-size:12px;" class="green-text">$' + entry.value + '</span></a>');
         $inputs[0].value = 'Choose Entry Type';
         $inputs.filter(function(index){return index > 0;}).val('').next('label').removeClass('active');
         $modal.closeModal();

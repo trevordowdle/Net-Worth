@@ -31,7 +31,7 @@ function sideNavModule(sources){
                     li('.no-padding',[
                         ul('.collapsible .collapsible-accordion',[
                             li('.bold',[
-                                a('.collapsible-header .waves-effect .waves-teal','CSS'),
+                                a('.collapsible-header .waves-effect .waves-teal .asset','CSS'),
                                 div('.collapsible-body',[
                                     ul([
                                         li([
@@ -43,7 +43,7 @@ function sideNavModule(sources){
                                 ])
                             ]),
                             li('.bold',[
-                                a('.collapsible-header .waves-effect .waves-teal','Components'),
+                                a('.collapsible-header .waves-effect .waves-teal .debt','Components'),
                                 div('.collapsible-body',[
                                     ul([
                                         li([
