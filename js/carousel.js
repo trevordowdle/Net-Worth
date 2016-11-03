@@ -28,7 +28,7 @@ var carouselModule;
                        carousel.carousel('next',indicator);         
                    });
        
-      carouselItems = getCarouselDateListStart();
+      carouselItems = getCarouselDateList();
 
       vtree$ = Rx.Observable.of(
                 div('.carousel .carousel-slider .center .noselect',
@@ -57,46 +57,15 @@ var carouselModule;
           DOM: vtree$
       }
   }
-    
-  let monthMap = {
-      1: 'January',
-      2: 'Feburary',
-      3: 'March',
-      4: 'April',
-      5: 'May',
-      6: 'June',
-      7: 'July',
-      8: 'August',
-      9: 'September',
-      10: 'October',
-      11: 'November',
-      12: 'Decemeber'
-  }
   
   let colorArray = ['red','amber','green','blue','purple','indigo','lime','cyan','teal'];
     
-  function getCarouselDateListStart(dateString){
-      let dateObj = getDateObject(dateString), dates = [], i;
-      
-      dates.push(getCarouselDate(dateObj,0));
-      
-      for(i = 1;i <= 4;i++){
-        dateObj.date.setMonth(dateObj.date.getMonth()+1);
-        dates.push(getCarouselDate(dateObj,i));
-      }
-      
-      dateObj.date.setMonth(dateObj.date.getMonth()-9);
-      
-      for(i = 5;i <= 8;i++){
-        dateObj.date.setMonth(dateObj.date.getMonth()+1);
-        dates.push(getCarouselDate(dateObj,i));
-      }
-
-      return dates;
-  }
-    
   function getCarouselDateList(dateString){
-      let dateObj = getDateObject(dateString), dates = [], i;
+      
+      let dateObj = utility.getDateObject(dateString), dates = [], i;
+      
+      userData.currentMonth = dateObj.month;
+      userData.currentYear = dateObj.year;
       
       dates.push(getCarouselDate(dateObj,0));
       
@@ -118,7 +87,7 @@ var carouselModule;
   function getCarouselDate(dateObj,i){
       month = dateObj.date.getMonth()+1;
       year = dateObj.date.getFullYear(); 
-      return {'year':year,'month':month,'monthString':monthMap[month] + ' ' + year,'color':colorArray[i]};
+      return {'year':year,'month':month,'monthString':utility.monthMap[month] + ' ' + year,'color':colorArray[i]};
   }
    
   //functionality
@@ -136,7 +105,7 @@ var carouselModule;
       };
       options = $.extend(defaults, options);
 
-      var timeFrameInfo = getDateObject();
+      var timeFrameInfo = utility.getDateObject();
 
       return this.each(function() {
 
@@ -241,10 +210,6 @@ var carouselModule;
           if (!options.no_wrap || (center >= 0 && center < count)) {
             el = images[wrap(center)];
               
-            if(final){   
-                console.log('final'); // other logic here.
-            }
-              
             if(timeFrameInfo.month !== el.attrs.data.month || timeFrameInfo.year !== el.attrs.data.year){
                 let $el, indexOffset, updateEl, temp;
                 timeFrameInfo.month = el.attrs.data.month;
@@ -261,10 +226,15 @@ var carouselModule;
                 }
                 
                 $(el.parentElement).find('.carousel-item').map((index,element)=>{
+                    console.log(userData.presentYear);
+                    console.log(userData.presentMonth);
                     element.attrs.data.month = dateList[index].month;
                     element.attrs.data.year = dateList[index].year;
-                    element.firstChild.innerText = monthMap[element.attrs.data.month] + ' ' + element.attrs.data.year;
+                    element.firstChild.innerText = utility.monthMap[element.attrs.data.month] + ' ' + element.attrs.data.year;
                 });
+                
+                utility.populateValues(); // other logic here.
+
             }
               
             el.style[xform] = alignment +

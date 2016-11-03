@@ -94,3 +94,22 @@ nav {
     not supported by any browser */
 }
 
+.side-nav.fixed a span {
+    letter-spacing: .5px;
+}
+
+.edit {
+  z-index:1000;
+  position:absolute;
+  right:0px;
+  cursor:pointer;
+}
+
+.edit:hover {
+  color:green!important;
+}
+
+.side-nav .collapsible-body li a, .side-nav.fixed .collapsible-body li a {
+  white-space: nowrap;
+}
+

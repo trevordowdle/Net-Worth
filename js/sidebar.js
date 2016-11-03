@@ -1,7 +1,29 @@
 
 function sideNavModule(sources){
 
+  //let temp = $('<div><p>hello</p></div>');
+  //temp = i('.material-icons','add');  
   let vtree$;
+
+  let getMouseLeave$ = sources.DOM.select('.collapsible-body ul li a').events('mouseenter').map(ev => {
+      return ev;
+  });
+
+  let getMouseEnter$ = sources.DOM.select('.collapsible-body ul li a').events('mouseleave').map(ev => {
+      return ev;
+  });
+
+  getMouseLeave$.merge(getMouseEnter$).subscribe((ev)=>{
+      let el$ = $(ev.currentTarget);
+      if(ev.type === 'mouseenter'){
+        el$.append($('.edit').removeClass('hide'));
+      }
+      if(ev.type === 'mouseleave'){
+            if(ev.fromElement.className !== 'material-icons edit'){
+                $('.edit').addClass('hide');
+            }
+      }
+  });
     
   let getClickSideBar$ = sources.DOM.select('.collapsible-header').events('click').map(ev => {
     let $target = $(ev.currentTarget);
@@ -15,8 +37,16 @@ function sideNavModule(sources){
     
   let getClicks$ = getClickSideBar$.merge(getClickAdd$);
     
-  
-
+  watchSidebar$ = sources.DOM.select('.side-nav li .collapsible')
+                       .observable
+                       .subscribe((el)=>{
+                            //$(el).append(temp);
+                            if(el.length){
+                                utility.watchData(el);
+                                watchSidebar$.dispose();
+                            }   
+                        });
+    
   vtree$ = getClicks$.map(()=>
             div([
                 ul('.side-nav .fixed #nav-mobile',[
@@ -31,44 +61,25 @@ function sideNavModule(sources){
                     li('.no-padding',[
                         ul('.collapsible .collapsible-accordion',[
                             li('.bold',[
-                                a('.collapsible-header .waves-effect .waves-teal .asset','CSS'),
+                                a('.collapsible-header .waves-effect .waves-teal .asset','Assets'),
                                 div('.collapsible-body',[
                                     ul([
-                                        li([
-                                            a('Color'),
-                                            a('Grid'),
-                                            a('Helplers')
-                                        ])
+                                        li()
                                     ])
                                 ])
                             ]),
                             li('.bold',[
-                                a('.collapsible-header .waves-effect .waves-teal .debt','Components'),
+                                a('.collapsible-header .waves-effect .waves-teal .debt','Debts'),
                                 div('.collapsible-body',[
                                     ul([
-                                        li([
-                                            a('Badges'),
-                                            a('Buttons'),
-                                            a('Breadcrumbs')
-                                        ])
-                                    ])
-                                ])
-                            ]),
-                            li('.bold',[
-                                a('.collapsible-header .waves-effect .waves-teal','Javascript'),
-                                div('.collapsible-body',[
-                                    ul([
-                                        li([
-                                            a('Carousel'),
-                                            a('Collapsible'),
-                                            a('Dialogs')
-                                        ])
+                                        li()
                                     ])
                                 ])
                             ])
                         ])
                     ])
-                  ])
+                  ]),
+                  i('.material-icons .edit .hide','mode_edit')
                 ])
       );
     
@@ -104,6 +115,26 @@ function accordionOpen(object) {
             $(this).css('height', '');
           }
       });
+}
+
+function populateNetWorthValues(dataObj,$elAsset,$elDebt){
+    $elAsset.empty();
+    $elDebt.empty();
+    if(dataObj){
+        addValues(dataObj['Asset'],'$','Asset',$elAsset);
+        addValues(dataObj['Debt'],'$','Debt',$elDebt);
+    }
+}
+
+function addValues(valueObj,prefix,type,$el){ 
+    if(valueObj){
+    //debugger;
+        Object.keys(valueObj).map(function(key){
+            let entry = utility.formatEntry({type:type,value:valueObj[key]});
+            $el.append('<a>' + key + ' - <span style="font-size:12px;pointer-events: none;" class="'+entry.class+'">' + entry.display + '</span></a>');
+        });
+        
+    }
 }
 
 

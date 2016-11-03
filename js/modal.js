@@ -9,7 +9,7 @@ function modalModule(sources){
   let vtree$, entry = {}, invalid;
 
     let modalAdd$ = sources.DOM.select('.modal .modal-action').events('click').map((ev)=>{
-      let invalid = false, $modal, $inputs, temp;
+      let invalid = false, $modal, $inputs, temp, path;
       $modal = $(ev.currentTarget.closest('.modal'));
       $inputs = $modal.find('.modal-content input');
       $inputs.each((index,el)=>{
@@ -24,11 +24,15 @@ function modalModule(sources){
       if(invalid){
         console.log('invalid');
       }
-      else{
-        //TODO - Dollar formatting, red for debt, make sure asset is positive value debt is negative.
-        $('.'+entry.type.toLowerCase()).next().find('ul li').append('<a>' + entry.name + ' - <span style="font-size:12px;" class="green-text">$' + entry.value + '</span></a>');
+      else {        
+        entry = utility.formatEntry(entry);
+
+        $('.'+entry.type.toLowerCase()).next().find('ul li').append('<a>' + entry.name + ' - <span style="font-size:12px;" class="'+entry.class+'">' + entry.display + '</span></a>');
         $inputs[0].value = 'Choose Entry Type';
         $inputs.filter(function(index){return index > 0;}).val('').next('label').removeClass('active');
+          
+        utility.updateData(entry);
+
         $modal.closeModal();
       }
       // check entry
