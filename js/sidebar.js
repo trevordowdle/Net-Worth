@@ -1,8 +1,6 @@
 
 function sideNavModule(sources){
 
-  //let temp = $('<div><p>hello</p></div>');
-  //temp = i('.material-icons','add');  
   let vtree$;
 
   let getMouseLeave$ = sources.DOM.select('.collapsible-body ul li a').events('mouseenter').map(ev => {
@@ -79,7 +77,7 @@ function sideNavModule(sources){
                         ])
                     ])
                   ]),
-                  i('.material-icons .edit .hide','mode_edit')
+                  i('.material-icons .edit .hide','mode_edit') // to do give this background and waves
                 ])
       );
     
