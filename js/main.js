@@ -5,8 +5,6 @@ function page(sources){
 
   let headerTree$ = isolate(headerModule)(sources).DOM;
   let mainTree$ = mainModule(sources).DOM;
-
-  //.modal-action
     
   let vtree$ = Rx.Observable.combineLatest(headerTree$, mainTree$, (headerTree, mainTree) =>
                                         div([
@@ -38,9 +36,27 @@ function headerModule(sources){
                 ])      
               ]),
               sideNavModule(sources).DOM,
-              modalModule(sources).DOM
+              modalModule(sources).DOM,
+              modalModule(sources,{
+                                    selector: '#modal2 .modal',
+                                    title: 'Edit Entry',
+                                    buttons: [
+                                        {
+                                            text:'UPDATE',
+                                            doClick: updateClick,
+                                            selector:'.modal-action-update'
+
+                                        },
+                                        {
+                                            text:'REMOVE',
+                                            doClick: removeClick,
+                                            selector:'.modal-action-remove',
+                                            float:'.left '
+                                        }
+                                    ]
+                                  }).DOM
             ])
-           );  
+           ); 
   return {
     DOM: vtree$
   };

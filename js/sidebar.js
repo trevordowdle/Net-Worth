@@ -29,11 +29,15 @@ function sideNavModule(sources){
     accordionOpen($target); 
   }).startWith('');
     
-  let getClickAdd$ = sources.DOM.select('.btn-floating.green').events('click').map(ev => {
+  let getClickAdd$ = sources.DOM.select('.btn-floating.add').events('click').map(ev => {
     $('#modal1').openModal();     
   });
+
+  let getClickEdit$ = sources.DOM.select('.material-icons.edit').events('click').map(ev => {
+    $('#modal2').openModal();     
+  });
     
-  let getClicks$ = getClickSideBar$.merge(getClickAdd$);
+  let getClicks$ = getClickSideBar$.merge(getClickAdd$).merge(getClickEdit$);
     
   watchSidebar$ = sources.DOM.select('.side-nav li .collapsible')
                        .observable
@@ -52,7 +56,7 @@ function sideNavModule(sources){
                         span('#logo .noselect',[
                             img({src:'https://material.google.com/static/images/nav_google_logo.svg'})
                         ]),
-                        a('.btn-floating .btn-large .waves-effect .waves-light .green',[
+                        a('.add .btn-floating .btn-large .waves-effect .waves-light .green',[
                             i('.material-icons','add')    
                         ])
                     ]),

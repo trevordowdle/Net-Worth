@@ -1,15 +1,102 @@
 
 
-function modalModule(sources){
+function modalModule(sources,options){
 
-  /*
-    <a>Badges - <span class="green-text">$115.00</span></a>
-  */
+  let vtree$;
+    
+  if(!options){ // use a method to combine objects
+      options = {
+        selector: '#modal1 .modal',
+        title: 'New Entry',
+        buttons: [
+                    {
+                        text:'ADD',
+                        doClick: addClick,
+                        selector:'.modal-action-add'
+                    }
+                 ]
+      }
+  }
 
-  let vtree$, entry = {}, invalid;
+  let ModalActionArr$ = options.buttons.map((button)=>{
+      return sources.DOM.select('.modal '+button.selector).events('click').map(button.doClick);
+  });
+    
+  //let modalAdd$ = sources.DOM.select('.modal .modal-action').events('click').map(options.doClick);
+    
+  let watchSelect$ = sources.DOM.select('select')
+                       .observable
+                       .subscribe((el)=>{
+                            if(el.length){
+                                el[0][0].disabled = true;
+                                $(el).material_select();
+                                watchSelect$.dispose();
+                            }   
+                        });
 
-    let modalAdd$ = sources.DOM.select('.modal .modal-action').events('click').map((ev)=>{
-      let invalid = false, $modal, $inputs, temp, path;
+  let getFocus$ = sources.DOM.select('.input-field input:not(.select-dropdown)').events('focus').map(ev => {
+    ev.currentTarget.nextSibling.className = "active";
+  }).startWith('');
+    
+  let getBlur$ = sources.DOM.select('.input-field input:not(.select-dropdown)').events('blur').map(ev => {
+    if(!ev.currentTarget.value){
+        ev.currentTarget.nextSibling.className = "";
+    }
+  }).startWith('');
+    
+  //let getEvents$ = getFocus$.merge(getBlur$).merge(modalAdd$);
+  let getEvents$ = getFocus$.merge(getBlur$);
+
+  ModalActionArr$.map((modalAction$)=>{
+      getEvents$ = getEvents$.merge(modalAction$);
+  });
+    
+  vtree$ = getEvents$.map(
+        div([
+            div(options.selector,[
+              div('.modal-content',[
+                h4(options.title),
+                div('.row',[
+                  div('.col .s12',[
+                    div('.row',[
+                        div('.input-field .col .s12',[
+                            select('#entry',[
+                                option('Choose Entry Type'),
+                                option('Asset'),
+                                option('Debt')
+                            ]),
+                            label('Entry Type')
+                        ])    
+                    ]),
+                    div('.row',[
+                     div('.input-field .col .s6',[
+                        input('#name .validate',{type:'text'}),
+                        label('Name')
+                      ]),
+                      div('.input-field .col .s3',[
+                        input('#value .validate',{type:'number'}),
+                        label('Value')
+                      ])
+                    ])
+                  ])
+                ]) 
+              ]),
+              div('.modal-footer',options.buttons.map((button)=>{
+                let float = button.float || '';
+                return a(float + button.selector + ' .waves-effect .waves-green .btn-flat',button.text);   
+              }))    
+            ])
+        ])
+    );  
+    
+  return {
+    DOM: vtree$
+  };
+
+}
+
+addClick = (ev)=>{
+      let invalid = false, $modal, $inputs, temp, path, entry = {};
       $modal = $(ev.currentTarget.closest('.modal'));
       $inputs = $modal.find('.modal-content input');
       $inputs.each((index,el)=>{
@@ -37,72 +124,16 @@ function modalModule(sources){
       }
       // check entry
       // add entry
-    });
-    
-  let watchSelect$ = sources.DOM.select('select')
-                       .observable
-                       .subscribe((el)=>{
-                            if(el.length){
-                                el[0][0].disabled = true;
-                                $(el).material_select();
-                                watchSelect$.dispose();
-                            }   
-                        });
+    };
 
-  let getFocus$ = sources.DOM.select('.input-field input:not(.select-dropdown)').events('focus').map(ev => {
-    ev.currentTarget.nextSibling.className = "active";
-  }).startWith('');
-    
-  let getBlur$ = sources.DOM.select('.input-field input:not(.select-dropdown)').events('blur').map(ev => {
-    if(!ev.currentTarget.value){
-        ev.currentTarget.nextSibling.className = "";
-    }
-  }).startWith('');
-    
-  let getEvents$ = getFocus$.merge(getBlur$).merge(modalAdd$);
-    
-  vtree$ = getEvents$.map(
-        div([
-            div('#modal1 .modal',[
-              div('.modal-content',[
-                h4('New Entry'),
-                div('.row',[
-                  div('.col .s12',[
-                    div('.row',[
-                        div('.input-field .col .s12',[
-                            select('#entry',[
-                                option('Choose Entry Type'),
-                                option('Asset'),
-                                option('Debt')
-                            ]),
-                            label('Entry Type')
-                        ])    
-                    ]),
-                    div('.row',[
-                     div('.input-field .col .s6',[
-                        input('#name .validate',{type:'text'}),
-                        label('Name')
-                      ]),
-                      div('.input-field .col .s3',[
-                        input('#value .validate',{type:'number'}),
-                        label('Value')
-                      ])
-                    ])
-                  ])
-                ]) 
-              ]),
-              div('.modal-footer',[
-                a('.modal-action .waves-effect .waves-green .btn-flat','ADD')
-              ])    
-            ])
-        ])
-    );  
-    
-  return {
-    DOM: vtree$
-  };
 
-}
+updateClick = (ev)=>{
+    Materialize.toast('Update', 4000);
+};
+
+removeClick = (ev)=>{
+    Materialize.toast('Remove', 4000);
+};
 
 
 (function($) {

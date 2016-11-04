@@ -84,7 +84,7 @@ var utility = function(){
             }
 
             entry.value = Math.abs(entry.value);
-            entry.display = entry.prefix + entry.value.toLocaleString() + '0000000000';
+            entry.display = entry.prefix + entry.value.toLocaleString();
 
             return entry;    
         },
