@@ -34,7 +34,26 @@ function sideNavModule(sources){
   });
 
   let getClickEdit$ = sources.DOM.select('.material-icons.edit').events('click').map(ev => {
-    $('#modal2').openModal();     
+      let item = ev.currentTarget.parentElement,
+      infoItems, itemType, index,
+      itemClass = item.parentElement.className,
+      modal2 = $('#modal2');
+      if(itemClass === 'asset-items'){
+          itemType = 'Asset';
+          index = 1;
+      }
+      if(itemClass === 'debt-items'){
+          itemType = 'Debt';
+          index = 2;
+      }
+      infoItems = item.firstChild.innerText.split(' - ');
+      infoItems[1] = infoItems[1].replace(/,/g, "").substring(index);
+
+      $('#modal2').find('select')[0].disabled = true;
+      $('#modal2').find('select').val(itemType).material_select();
+      $('#modal2').find('#name').val(infoItems[0]).next().addClass('active');
+      $('#modal2').find('#value').val(infoItems[1]).next().addClass('active');
+      $('#modal2').openModal();     
   });
     
   let getClicks$ = getClickSideBar$.merge(getClickAdd$).merge(getClickEdit$);
@@ -66,7 +85,7 @@ function sideNavModule(sources){
                                 a('.collapsible-header .waves-effect .waves-teal .asset','Assets'),
                                 div('.collapsible-body',[
                                     ul([
-                                        li()
+                                        li('.asset-items')
                                     ])
                                 ])
                             ]),
@@ -74,7 +93,7 @@ function sideNavModule(sources){
                                 a('.collapsible-header .waves-effect .waves-teal .debt','Debts'),
                                 div('.collapsible-body',[
                                     ul([
-                                        li()
+                                        li('.debt-items')
                                     ])
                                 ])
                             ])
@@ -133,7 +152,7 @@ function addValues(valueObj,prefix,type,$el){
     //debugger;
         Object.keys(valueObj).map(function(key){
             let entry = utility.formatEntry({type:type,value:valueObj[key]});
-            $el.append('<a>' + key + ' - <span style="font-size:12px;pointer-events: none;" class="'+entry.class+'">' + entry.display + '</span></a>');
+            $el.append('<a><span style="pointer-events:none;">' + key + ' - <span style="font-size:12px;pointer-events: none;" class="'+entry.class+'">' + entry.display + '</span></span></a>');
         });
         
     }

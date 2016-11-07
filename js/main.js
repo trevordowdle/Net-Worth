@@ -39,6 +39,7 @@ function headerModule(sources){
               modalModule(sources).DOM,
               modalModule(sources,{
                                     selector: '#modal2 .modal',
+                                    disabled: true,
                                     title: 'Edit Entry',
                                     buttons: [
                                         {

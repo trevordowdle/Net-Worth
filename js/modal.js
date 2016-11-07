@@ -6,6 +6,7 @@ function modalModule(sources,options){
     
   if(!options){ // use a method to combine objects
       options = {
+        disabled: false,
         selector: '#modal1 .modal',
         title: 'New Entry',
         buttons: [
@@ -70,7 +71,7 @@ function modalModule(sources,options){
                     ]),
                     div('.row',[
                      div('.input-field .col .s6',[
-                        input('#name .validate',{type:'text'}),
+                        input('#name .validate',{type:'text',disabled:options.disabled}),
                         label('Name')
                       ]),
                       div('.input-field .col .s3',[
@@ -128,6 +129,18 @@ addClick = (ev)=>{
 
 
 updateClick = (ev)=>{
+    let invalid = false, $modal, $inputs, temp, path, entry = {};
+    $modal = $(ev.currentTarget.closest('.modal'));
+    $inputs = $modal.find('.modal-content input');
+    $inputs.each((index,el)=>{
+      if(!el.value || el.value === 'Choose Entry Type'){
+        temp = el.id || 'type';
+        Materialize.toast((temp[0].toUpperCase() + temp.substring(1)) + ' is a required field.', 4000);
+        invalid = true;
+      }
+      entry[el.id || 'type'] = el.value;
+    });
+    debugger;
     Materialize.toast('Update', 4000);
 };
 
