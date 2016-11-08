@@ -129,6 +129,7 @@ addClick = (ev)=>{
 
 
 updateClick = (ev)=>{
+    
     let invalid = false, $modal, $inputs, temp, path, entry = {};
     $modal = $(ev.currentTarget.closest('.modal'));
     $inputs = $modal.find('.modal-content input');
@@ -140,12 +141,27 @@ updateClick = (ev)=>{
       }
       entry[el.id || 'type'] = el.value;
     });
-    debugger;
-    Materialize.toast('Update', 4000);
+    entry = utility.formatEntry(entry);
+    $modal.data('item').children[0].children[0].innerText = entry.display;
+    utility.updateData(entry);
+    $modal.closeModal();
+    //Materialize.toast('Update', 4000);
 };
 
 removeClick = (ev)=>{
-    Materialize.toast('Remove', 4000);
+    let $modal, $inputs, entry = {}, element;
+    $modal = $(ev.currentTarget.closest('.modal'));
+    $inputs = $modal.find('.modal-content input');
+    $inputs.each((index,el)=>{
+      entry[el.id || 'type'] = el.value;
+    });
+    entry = utility.formatEntry(entry);
+    element = $modal.data('item');
+    element.parentNode.removeChild(element);
+    entry.value = null;
+    utility.updateData(entry);
+    $modal.closeModal();
+    //Materialize.toast('Remove', 4000);
 };
 
 

@@ -73,6 +73,8 @@ var utility = function(){
             return dateObject;    
         },
         formatEntry(entry){
+            let fractionIndicator = 2; 
+            
             if(entry.type === "Asset"){
                 entry.class = "green-text";
                 entry.prefix = '$';
@@ -84,7 +86,10 @@ var utility = function(){
             }
 
             entry.value = Math.abs(entry.value);
-            entry.display = entry.prefix + entry.value.toLocaleString();
+            if(entry.value % 1 === 0){
+                fractionIndicator = 0;    
+            }
+            entry.display = entry.prefix + entry.value.toLocaleString(undefined, {maximumFractionDigits: fractionIndicator, minimumFractionDigits: fractionIndicator});
 
             return entry;    
         },

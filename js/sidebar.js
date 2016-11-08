@@ -53,6 +53,7 @@ function sideNavModule(sources){
       $('#modal2').find('select').val(itemType).material_select();
       $('#modal2').find('#name').val(infoItems[0]).next().addClass('active');
       $('#modal2').find('#value').val(infoItems[1]).next().addClass('active');
+      $('#modal2').data("item",item);
       $('#modal2').openModal();     
   });
     
