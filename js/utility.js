@@ -8,14 +8,17 @@
       messagingSenderId: "441384900863"
     };
     firebase.initializeApp(config);
-
-var userDatabase = firebase.database().ref('dowdle2'),
+var userDatabase,
     userData = {}; // get user database
+
+//firebase.auth().signOut();
+
 
 var utility = function(){
     
     let $el, $assetEl, $debtEl;
-    
+
+    userDatabase = firebase.database().ref('dowdle2');
     
     obj = {
         monthMap : {
