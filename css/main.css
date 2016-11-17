@@ -139,3 +139,7 @@ nav {
   padding-top:10px;
 }
 
+#firebaseui-auth-container {
+  margin-top:-30px;
+}
+

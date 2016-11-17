@@ -129,6 +129,12 @@ function headerModule(sources){
 function mainModule(sources){
 
       let vtree$;
+
+sources.DOM.select('.logout')
+.events('click')
+.subscribe(()=>{
+    firebase.auth().signOut();    
+});
     
   vtree$ = Rx.Observable.of(
         main([
@@ -137,6 +143,7 @@ function mainModule(sources){
                     div('.col .s12 .m8 .l12',[
                         br(),
                         p('Hello World!'),
+                        button('.logout','logout'),
                         br()
                     ])
                 ])

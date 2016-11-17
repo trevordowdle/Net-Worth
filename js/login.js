@@ -1,11 +1,22 @@
 
+let ui;
+
 function loginModule(sources){ 
 
   console.log('loaded');
   document.body.style.backgroundColor = '#4caf50';
 
   let uiConfig = {
-        'signInSuccessUrl': 'index.html',
+        'callbacks': {
+          'signInSuccess': function(currentUser, credential, redirectUrl) {
+            document.body.style.backgroundColor = '';
+            $('.login-inner').hide();
+            // Do something.
+            // Return type determines whether we continue the redirect automatically
+            // or whether we leave that to developer to handle.
+            return true;
+          }
+        },
         'signInFlow':'popup',
         'signInOptions': [
             // Leave the lines as is for the providers you want to offer your users.
@@ -23,7 +34,9 @@ function loginModule(sources){
     .observable
     .subscribe((el)=>{
         if(el.length){
-            let ui = new firebaseui.auth.AuthUI(firebase.auth());
+            if(!ui){
+                ui = new firebaseui.auth.AuthUI(firebase.auth());
+            }
             // The start method will wait until the DOM is loaded.
             ui.start('#firebaseui-auth-container', uiConfig);
         }   
@@ -36,6 +49,8 @@ function loginModule(sources){
                             span('#logo2 .noselect',[
                                 img({src:'https://material.google.com/static/images/nav_google_logo.svg'})
                             ]),
+                            p('Track your Net Worth'),
+                            br(),
                             div('#firebaseui-auth-container')
                         ])
                     ])
