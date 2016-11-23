@@ -38,13 +38,13 @@ function sideNavModule(sources){
       infoItems, itemType, index,
       itemClass = item.parentElement.className,
       modal2 = $('#modal2');
-      if(itemClass === 'asset-items'){
+      if(itemClass.indexOf('asset-items') >= 0){
           itemType = 'Asset';
           index = 1;
       }
-      if(itemClass === 'debt-items'){
+      else if(itemClass.indexOf('debt-items') >= 0){
           itemType = 'Debt';
-          index = 2;
+          index = 1;
       }
       infoItems = item.firstChild.innerText.split(' - ');
       infoItems[1] = infoItems[1].replace(/,/g, "").substring(index);
@@ -140,20 +140,105 @@ function accordionOpen(object) {
 }
 
 function populateNetWorthValues(dataObj,$elAsset,$elDebt){
+    moveEdit($elAsset.closest('.collapsible-accordion')[0]);
     $elAsset.empty();
     $elDebt.empty();
     if(dataObj){
-        addValues(dataObj['Asset'],'$','Asset',$elAsset);
-        addValues(dataObj['Debt'],'$','Debt',$elDebt);
+        //Somewhere in here we can initiate the graphs but need to create a uncoupled function so I can use it for updates as well
+        if(!dataObj.entryGrey){
+            //drawGraph(dataObj['Asset'],'Asset');
+            //drawGraph(dataObj['Debt'],'Debt');
+            drawLineGraph();
+        }
+        else{
+            //document.getElementById('chart_Asset').hidden = true;  
+            //document.getElementById('chart_Debt').hidden = true;    
+            document.getElementById('curve_chart').hidden = true; 
+        }
+
+        addValues(dataObj['Asset'],'$','Asset',$elAsset,dataObj.entryGrey);
+        addValues(dataObj['Debt'],'$','Debt',$elDebt,dataObj.entryGrey);
+        dataObj.entryGrey = undefined;
+    }
+    else{
+        //document.getElementById('chart_Asset').hidden = true;  
+        //document.getElementById('chart_Debt').hidden = true; 
+        document.getElementById('curve_chart').hidden = true;      
     }
 }
 
-function addValues(valueObj,prefix,type,$el){ 
+function drawLineGraph(){
+       let entryTemp = Object.keys(userData.entries), i, 
+       currentString = utility.getReferenceStr(userData.currentMonth,userData.currentYear), 
+       entryKeys = [];
+       let el = document.getElementById('curve_chart'),
+       dataArr;
+
+       for(i = 0;i < entryTemp.length;i++){
+           entryKeys.push(entryTemp[i]);
+           if(entryTemp[i] === currentString){
+               break;
+           }
+       }
+
+       if(entryKeys.length <= 1){
+           el.hidden = true;
+           return false;
+       }
+
+       dataArr = entryKeys.reduce((prev,key)=>{
+           prev.push([key.toString(),userData.entries[key].NetWorth]);
+           return prev;
+       },[['Month','Net Worth']]);
+        
+        data = google.visualization.arrayToDataTable(dataArr);
+
+        options = {
+        chart: {
+          title: 'Box Office Earnings in First Two Weeks of Opening',
+          subtitle: 'in millions of dollars (USD)'
+        },
+        width: 900,
+        height: 500
+      };
+        chart = new google.charts.Line(document.getElementById('curve_chart'));
+
+        chart.draw(data, options);
+        el.hidden = false;
+
+}
+
+function drawGraph(obj,type){
+    let rows, el = document.getElementById('chart_'+type);
+    // Create the data table.
+    let data = new google.visualization.DataTable();
+    data.addColumn('string', 'Topping');
+    data.addColumn('number', 'Slices');
+
+    rows = Object.keys(obj).map((key)=>{
+        return [key,obj[key]];
+    });
+
+    data.addRows(rows); 
+
+    // Set chart options
+    let options = {'title':type + ' Allocation',
+                    /*'width':440,
+                    'height':330*/};
+
+    // Instantiate and draw our chart, passing in some options.
+    let chart = new google.visualization.PieChart(el);
+    el.hidden = false;
+    chart.draw(data, options);
+}
+
+function addValues(valueObj,prefix,type,$el,entryGrey){ 
     if(valueObj){
     //debugger;
         Object.keys(valueObj).map(function(key){
             let entry = utility.formatEntry({type:type,value:valueObj[key]});
-            $el.append('<a><span style="pointer-events:none;">' + key + ' - <span style="font-size:12px;pointer-events: none;" class="'+entry.class+'">' + entry.display + '</span></span></a>');
+            entry.grey = entryGrey ? 'entry-grey' : '';
+            $el.append('<a><span class="' + entry.grey + '" style="pointer-events:none;">' + key + ' - <span style="font-size:12px;pointer-events: none;" class="'+entry.class+'">' + entry.display + '</span></span></a>');
         });
         
     }

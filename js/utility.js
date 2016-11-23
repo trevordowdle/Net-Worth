@@ -1,6 +1,12 @@
 
-    // Initialize Firebase
-    var config = {
+var userDatabase,
+    userData = {}; // get user database
+
+
+var utility = function(){
+    
+        // Initialize Firebase
+    let config = {
       apiKey: "AIzaSyC7eDuSl0CfhDQ95wEXhaNFNHcT3nlxPGs",
       authDomain: "networth-8b077.firebaseapp.com",
       databaseURL: "https://networth-8b077.firebaseio.com",
@@ -8,17 +14,16 @@
       messagingSenderId: "441384900863"
     };
     firebase.initializeApp(config);
-var userDatabase,
-    userData = {}; // get user database
-
-//firebase.auth().signOut();
-
-
-var utility = function(){
     
     let $el, $assetEl, $debtEl;
 
-    userDatabase = firebase.database().ref('dowdle2');
+    google.charts.load('current', {'packages':[/*'corechart',*/'line']});
+    google.charts.setOnLoadCallback(()=>{
+        //either use promises or somehow use rxjs to combine the data and the chart callback for when both are ready.
+        console.log('google charts loaded');
+    });
+
+    
     
     obj = {
         monthMap : {
@@ -35,6 +40,9 @@ var utility = function(){
           11: 'November',
           12: 'Decemeber'
         },
+        setDatabase:function(uid){
+            userDatabase = firebase.database().ref(uid);    
+        },
         watchData:function(el){
             
             let firstSnapshot, utilityThis = this;
@@ -43,25 +51,40 @@ var utility = function(){
             $debtEl = $el.find('.debt').next().find('ul li');
 
             userDatabase.on("value", function(snapshot) {
-               userData.entries = snapshot.val();
+               userData.entries = snapshot.val() || {};
 
                if(!firstSnapshot){
-                   
                    userData.presentMonth = userData.currentMonth;
                    userData.presentYear = userData.currentYear;
                    
                    firstSnapshot = true;
-                   populateNetWorthValues(userData.entries[utilityThis.monthMap[userData.currentMonth]+userData.currentYear],$assetEl,$debtEl);
+                   
+                   let dataObj = utility.getDataObj();
+                   populateNetWorthValues(dataObj,$assetEl,$debtEl);
                }
 
             });
         
         },
+        getReferenceStr(month,year){
+            month = month < 10 ? '0'+month : month; 
+            return year+''+month;
+        },
         updateData:function(entry){
-            let updateObj = {};
-    
-            updateObj[this.monthMap[userData.currentMonth]+userData.currentYear+'/'+entry.type+'/'+entry.name] = entry.value;
-            //debugger;
+            let updateObj = {}, 
+            refStr = this.getReferenceStr(userData.currentMonth,userData.currentYear);
+            if(!userData.entries[refStr]){
+                userData.entries[refStr] = {};
+            }
+            if(!userData.entries[refStr][entry.type]){
+                userData.entries[refStr][entry.type] = {};
+            }
+            userData.entries[refStr][entry.type][entry.name] = entry.value;
+            updateObj[refStr+'/NetWorth'] = this.getNetWorth(userData.entries[refStr]);
+            if(updateObj[refStr+'/NetWorth']){
+                updateObj[refStr+'/NetWorth'] = parseFloat(updateObj[refStr+'/NetWorth']).toFixed(2);
+            }
+            updateObj[refStr+'/'+entry.type+'/'+entry.name] = entry.value;
             userDatabase.update(updateObj);    
         },
         getDateObject:function(dateString){
@@ -85,7 +108,7 @@ var utility = function(){
 
             if(entry.type === "Debt"){
                 entry.class = "red-text";
-                entry.prefix = '-$';
+                entry.prefix = '$';
             }
 
             entry.value = Math.abs(entry.value);
@@ -97,62 +120,56 @@ var utility = function(){
             return entry;    
         },
         populateValues(){
-            populateNetWorthValues(userData.entries[this.monthMap[userData.currentMonth]+userData.currentYear],$assetEl,$debtEl);
+            let dataObj = this.getDataObj();
+            populateNetWorthValues(dataObj,$assetEl,$debtEl);
+        },
+        getDataObj(){
+            let refString = this.getReferenceStr(userData.currentMonth,userData.currentYear);
+            let dataObj = userData.entries[refString], tempMonth, tempYear;
+            if(!dataObj){
+                tempMonth = userData.currentMonth-1;
+                tempYear = userData.currentYear;
+                if(tempMonth === 0){
+                    tempMonth = 12;
+                    tempYear -= 1;
+                }
+                refString = this.getReferenceStr(tempMonth,tempYear);
+                dataObj = userData.entries[refString];
+                if(dataObj){
+                    dataObj.entryGrey = true;
+                }
+            }
+            return dataObj;
+        },
+        getNetWorth(obj){
+            let Assets, Debts, Hit = false, Net;
+            if(!obj['Asset']){ //create a helper function that will check if something exists and if not create empty obj
+                obj['Asset'] = {};
+            }
+            if(!obj['Debt']){ //create a helper function that will check if something exists and if not create empty obj
+                obj['Debt'] = {};
+            }
+            Assets = Object.keys(obj['Asset']).reduce((prev,current)=>{
+                debugger;
+                if(obj['Asset'][current] !== null){
+                    Hit = true;
+                    prev += obj['Asset'][current];
+                }
+                return prev;
+            },0);
+            Debts = Object.keys(obj['Debt']).reduce((prev,current)=>{
+                debugger;
+                if(obj['Debt'][current] !== null){
+                    Hit = true;
+                    prev += obj['Debt'][current];
+                }
+                return prev;
+            },0);
+            Net = Assets - Debts;
+            return Hit ? Net : null;
         }
     };
 
     return obj;
     
 }();
-    
-       /*
-       netData = snapShotData['October2016'].Assets.map((data)=>{
-           let key = Object.keys(data)[0];
-           return [key,data[key]];
-       });
-       netData2 = snapShotData['October2016'].Debts.map((data)=>{
-           let key = Object.keys(data)[0];
-           return [key,data[key]];
-       });   
-
-       netData3 = Object.keys(snapShotData).reduce((prev,data)=>{ 
-           //console.log(snapShotData[data].date); 
-           let row = [new Date(snapShotData[data].date)];
-           //console.log(row[0]);
-           row = row.concat(snapShotData[data].Assets.reduce((prev,obj)=>{
-               let key = Object.keys(obj)[0];
-               prev[0] += obj[key];
-               return prev;
-           },[0]));
-
-           row = row.concat(snapShotData[data].Debts.reduce((prev,obj)=>{
-               let key = Object.keys(obj)[0];
-               prev[0] += obj[key];
-               return prev;
-           },[0]));
-
-           prev.push(row);
-           return prev;
-
-       },[]);  
-
-      netData3 = netData3.map((row)=>{
-        let net;
-        net = row[1] - row[2];
-        row.pop();
-        row.pop();
-        row.push(net);
-        return row;
-      });
-
-      */
-
-       //netData3.unshift(['Date'/*, 'Assets', 'Debts'*/,'Net']);
-
-      //console.log(netData3);
-
-       //google.charts.load('current', {'packages':['corechart']});
-       //google.charts.setOnLoadCallback(drawChart);
-    //}, function (error) {
-       //console.log("Error: " + error.code);
-   // });

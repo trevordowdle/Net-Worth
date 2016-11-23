@@ -26,57 +26,12 @@ const drivers = {
 
 initApp = function() {
     firebase.auth().onAuthStateChanged(function(user) {
-    if (user) {
-        Cycle.run(page, drivers);
-        // User is signed in.
-        //var displayName = user.displayName;
-        //var email = user.email;
-        //var emailVerified = user.emailVerified;
-        //var photoURL = user.photoURL;
-        var uid = user.uid;
-        console.log(uid);
-        //var providerData = user.providerData;
-        //user.getToken().then(function(accessToken) {
-        //get unique id and pull data from firebase.
-        //document.getElementById('sign-in-status').textContent = 'You are Signed in';
-        //document.getElementById('sign-in').textContent = 'Sign out';
-        /*document.getElementById('account-details').textContent = JSON.stringify({
-            displayName: displayName,
-            email: email,
-            emailVerified: emailVerified,
-            photoURL: photoURL,
-            uid: uid,
-            accessToken: accessToken,
-            providerData: providerData
-        }, null, '  ');
-        */
-        //});
-    } else {
-        Cycle.run(loginModule, drivers);
-    
-        /*
-            var uiConfig = {
-            'signInSuccessUrl': 'index.html',
-            'signInFlow':'popup',
-            'signInOptions': [
-            // Leave the lines as is for the providers you want to offer your users.
-            firebase.auth.GoogleAuthProvider.PROVIDER_ID,
-            firebase.auth.FacebookAuthProvider.PROVIDER_ID,
-            firebase.auth.TwitterAuthProvider.PROVIDER_ID,
-            firebase.auth.GithubAuthProvider.PROVIDER_ID,
-            firebase.auth.EmailAuthProvider.PROVIDER_ID
-            ],
-            // Terms of service url.
-            'tosUrl': 'index.html',
-        };
-
-        // Initialize the FirebaseUI Widget using Firebase.
-        var ui = new firebaseui.auth.AuthUI(firebase.auth());
-        // The start method will wait until the DOM is loaded.
-        ui.start('#firebaseui-auth-container', uiConfig);
-      */
-    
-    }
+        if (user) {
+            utility.setDatabase(user.uid);
+            Cycle.run(page, drivers);
+        } else {
+            Cycle.run(loginModule, drivers);
+        }
     }, function(error) {
     console.log(error);
     });
@@ -138,9 +93,23 @@ sources.DOM.select('.logout')
     
   vtree$ = Rx.Observable.of(
         main([
-            div('.container',[
+            div([
                 div('.row',[
-                    div('.col .s12 .m8 .l12',[
+                    br(),
+                    div('.col .s12 .m12 .l6',[
+                        div([
+                            div('#chart_Asset')
+                        ])
+                    ]),
+                    div('.col .s12 .m12 .l6',[
+                        div([
+                            div('#chart_Debt')
+                        ])
+                    ]),
+                    div('.col .s12 .m12 .l12',[
+                        div('#curve_chart')
+                    ]),
+                    div('.col .s12 .m12 .l12',[
                         br(),
                         p('Hello World!'),
                         button('.logout','logout'),
@@ -497,16 +466,3 @@ sources.DOM.select('.logout')
     }, false);
 
 })(window);
-
-/*
-    // Initialize Firebase
-    var config = {
-      apiKey: "AIzaSyC7eDuSl0CfhDQ95wEXhaNFNHcT3nlxPGs",
-      authDomain: "networth-8b077.firebaseapp.com",
-      databaseURL: "https://networth-8b077.firebaseio.com",
-      storageBucket: "",
-      messagingSenderId: "441384900863"
-    };
-    firebase.initializeApp(config);
-*/
-

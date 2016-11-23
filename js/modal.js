@@ -114,8 +114,9 @@ addClick = (ev)=>{
       }
       else {        
         entry = utility.formatEntry(entry);
-
-        $('.'+entry.type.toLowerCase()).next().find('ul li').append('<a>' + entry.name + ' - <span style="font-size:12px;" class="'+entry.class+'">' + entry.display + '</span></a>');
+        
+          //here//
+        $('.'+entry.type.toLowerCase()).next().find('ul li').append('<a><span style="pointer-events:none;">' + entry.name + ' - <span style="font-size:12px;pointer-events: none;" class="'+entry.class+'">' + entry.display + '</span></span></a>');
         $inputs[0].value = 'Choose Entry Type';
         $inputs.filter(function(index){return index > 0;}).val('').next('label').removeClass('active');
           
@@ -142,6 +143,7 @@ updateClick = (ev)=>{
       entry[el.id || 'type'] = el.value;
     });
     entry = utility.formatEntry(entry);
+    $modal.data('item').children[0].className = '';
     $modal.data('item').children[0].children[0].innerText = entry.display;
     utility.updateData(entry);
     $modal.closeModal();
@@ -149,7 +151,7 @@ updateClick = (ev)=>{
 };
 
 removeClick = (ev)=>{
-    let $modal, $inputs, entry = {}, element;
+    let $modal, $inputs, entry = {}, element, edit;
     $modal = $(ev.currentTarget.closest('.modal'));
     $inputs = $modal.find('.modal-content input');
     $inputs.each((index,el)=>{
@@ -157,6 +159,7 @@ removeClick = (ev)=>{
     });
     entry = utility.formatEntry(entry);
     element = $modal.data('item');
+    moveEdit(element);
     element.parentNode.removeChild(element);
     entry.value = null;
     utility.updateData(entry);
@@ -164,6 +167,12 @@ removeClick = (ev)=>{
     //Materialize.toast('Remove', 4000);
 };
 
+moveEdit = (element)=>{
+    edit = element.getElementsByClassName('edit');
+    if(edit.length){
+        element.parentElement.parentElement.appendChild(edit[0]);    
+    }
+};
 
 (function($) {
     var _stack = 0,
