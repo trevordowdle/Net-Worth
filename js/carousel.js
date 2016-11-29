@@ -63,6 +63,7 @@ var carouselModule;
   function getCarouselDateList(dateString){
       
       let dateObj = utility.getDateObject(dateString), dates = [], i;
+      dateObj.date.setDate(1);
       
       userData.currentMonth = dateObj.month;
       userData.currentYear = dateObj.year;
@@ -80,7 +81,6 @@ var carouselModule;
         dateObj.date.setMonth(dateObj.date.getMonth()+1);
         dates.push(getCarouselDate(dateObj,i));
       }
-
       return dates;
   }
   

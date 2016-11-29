@@ -140,6 +140,7 @@ function accordionOpen(object) {
 }
 
 function populateNetWorthValues(dataObj,$elAsset,$elDebt){
+    let networthHeader;
     moveEdit($elAsset.closest('.collapsible-accordion')[0]);
     $elAsset.empty();
     $elDebt.empty();
@@ -148,12 +149,24 @@ function populateNetWorthValues(dataObj,$elAsset,$elDebt){
         if(!dataObj.entryGrey){
             //drawGraph(dataObj['Asset'],'Asset');
             //drawGraph(dataObj['Debt'],'Debt');
+            //debugger;
             drawLineGraph();
+            //document.getElementBy
+            networthHeader = document.getElementsByClassName('networth-header')[0];
+            networthHeader.getElementsByClassName('networth')[0].getElementsByTagName('span')[0].textContent = '$' + parseFloat(dataObj.NetWorth).toLocaleString(undefined, {maximumFractionDigits: 0, minimumFractionDigits: 0});
+            networthHeader.getElementsByClassName('assets')[0].getElementsByTagName('span')[0].textContent = '$' + parseFloat(dataObj.Assets).toLocaleString(undefined, {maximumFractionDigits: 0, minimumFractionDigits: 0});
+            networthHeader.getElementsByClassName('debts')[0].getElementsByTagName('span')[0].textContent = '$' + parseFloat(dataObj.Debts).toLocaleString(undefined, {maximumFractionDigits: 0, minimumFractionDigits: 0});
+            networthHeader.hidden = false;
+            $('.networth-header .networth').addClass('transition');
+            setTimeout(()=>{
+                $('.networth-header .networth').removeClass('transition');    
+            },400);
         }
         else{
             //document.getElementById('chart_Asset').hidden = true;  
             //document.getElementById('chart_Debt').hidden = true;    
             document.getElementById('curve_chart').hidden = true; 
+            document.getElementsByClassName('networth-header')[0].hidden = true;
         }
 
         addValues(dataObj['Asset'],'$','Asset',$elAsset,dataObj.entryGrey);
@@ -163,7 +176,8 @@ function populateNetWorthValues(dataObj,$elAsset,$elDebt){
     else{
         //document.getElementById('chart_Asset').hidden = true;  
         //document.getElementById('chart_Debt').hidden = true; 
-        document.getElementById('curve_chart').hidden = true;      
+        document.getElementById('curve_chart').hidden = true; 
+        document.getElementsByClassName('networth-header')[0].hidden = true;     
     }
 }
 
@@ -187,7 +201,7 @@ function drawLineGraph(){
        }
 
        dataArr = entryKeys.reduce((prev,key)=>{
-           prev.push([key.toString(),userData.entries[key].NetWorth]);
+           prev.push([key.toString(),parseFloat(userData.entries[key].NetWorth)]);
            return prev;
        },[['Month','Net Worth']]);
         

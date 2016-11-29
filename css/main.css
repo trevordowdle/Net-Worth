@@ -152,3 +152,24 @@ ul li a span.entry-grey {
     opacity:.6;
 }
 
+.networth-header label, .networth-header span {
+  font-size:1rem;
+}
+
+.networth-header .networth label, .networth-header .networth span {
+  font-size:1.1rem;
+}
+
+.networth-header .networth {
+  -webkit-transition: all .4s ease-in-out;
+	-moz-transition: all .4s ease-in-out;
+	-o-transition: all .4s ease-in-out;
+	-ms-transition: all .4s ease-in-out;
+}
+
+.transition {
+    -webkit-transform: scale(1.2); 
+    -moz-transform: scale(1.2);
+    -o-transform: scale(1.2);
+    transform: scale(1.2);
+}

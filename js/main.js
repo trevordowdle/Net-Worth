@@ -106,6 +106,20 @@ sources.DOM.select('.logout')
                             div('#chart_Debt')
                         ])
                     ]),
+                    div('.row .networth-header',[
+                        div('.col .s4 .m4 .l4 .assets',[
+                            label('Assets: '),
+                            span('.green-text','$100,000')
+                        ]),
+                        div('.col .s4 .m4 .l4 .debts',[
+                            label('Debts: '),
+                            span('.red-text','$45,000')
+                        ]),
+                        div('.col .s4 .m4 .l4 .networth',[
+                            label('Net Worth: '),
+                            span('.green-text .text-darken-3','$55,000')
+                        ])
+                    ]),
                     div('.col .s12 .m12 .l12',[
                         div('#curve_chart')
                     ]),
@@ -126,6 +140,19 @@ sources.DOM.select('.logout')
 
                 
 }
+
+/*
+
+    <div class="row"><div class="col s4 m4 l4"><label>Assets: </label><span class="green-text" style="
+    font-size: 1rem;
+">$100,000</span></div><div class="col s4 m4 l4"><label>Debts: </label><span class="red-text">$45,000</span></div><div class="col s4 m4 l4"><label style="
+    font-size: 1.2rem;
+">Net Worth: </label><span class="green-text text-darken-3" style="
+    font-size: 1.2rem;
+">$55,000</span></div></div>
+
+
+*/
 
 
 /*!

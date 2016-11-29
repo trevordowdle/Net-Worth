@@ -72,7 +72,8 @@ var utility = function(){
         },
         updateData:function(entry){
             let updateObj = {}, 
-            refStr = this.getReferenceStr(userData.currentMonth,userData.currentYear);
+            refStr = this.getReferenceStr(userData.currentMonth,userData.currentYear),
+            netWorthData;
             if(!userData.entries[refStr]){
                 userData.entries[refStr] = {};
             }
@@ -80,9 +81,11 @@ var utility = function(){
                 userData.entries[refStr][entry.type] = {};
             }
             userData.entries[refStr][entry.type][entry.name] = entry.value;
-            updateObj[refStr+'/NetWorth'] = this.getNetWorth(userData.entries[refStr]);
-            if(updateObj[refStr+'/NetWorth']){
-                updateObj[refStr+'/NetWorth'] = parseFloat(updateObj[refStr+'/NetWorth']).toFixed(2);
+            netWorthData = this.getNetWorth(userData.entries[refStr]);
+            if(netWorthData.Net){
+                updateObj[refStr+'/NetWorth'] = parseFloat(netWorthData.Net).toFixed(2);
+                updateObj[refStr+'/Assets'] = parseFloat(netWorthData.Assets).toFixed(2);
+                updateObj[refStr+'/Debts'] = parseFloat(netWorthData.Debts).toFixed(2);
             }
             updateObj[refStr+'/'+entry.type+'/'+entry.name] = entry.value;
             userDatabase.update(updateObj);    
@@ -166,7 +169,7 @@ var utility = function(){
                 return prev;
             },0);
             Net = Assets - Debts;
-            return Hit ? Net : null;
+            return Hit ? {'Net':Net,'Assets':Assets,'Debts':Debts} : null;
         }
     };
 
