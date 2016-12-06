@@ -156,17 +156,21 @@ function populateNetWorthValues(dataObj,$elAsset,$elDebt){
             networthHeader.getElementsByClassName('networth')[0].getElementsByTagName('span')[0].textContent = '$' + parseFloat(dataObj.NetWorth).toLocaleString(undefined, {maximumFractionDigits: 0, minimumFractionDigits: 0});
             networthHeader.getElementsByClassName('assets')[0].getElementsByTagName('span')[0].textContent = '$' + parseFloat(dataObj.Assets).toLocaleString(undefined, {maximumFractionDigits: 0, minimumFractionDigits: 0});
             networthHeader.getElementsByClassName('debts')[0].getElementsByTagName('span')[0].textContent = '$' + parseFloat(dataObj.Debts).toLocaleString(undefined, {maximumFractionDigits: 0, minimumFractionDigits: 0});
-            networthHeader.hidden = false;
-            $('.networth-header .networth').addClass('transition');
-            setTimeout(()=>{
-                $('.networth-header .networth').removeClass('transition');    
-            },400);
+            networthHeader.style.visibility = "";
+
+            setTimeout(function(){
+                $('.networth-header .networth').addClass('transition');
+                setTimeout(()=>{
+                    $('.networth-header .networth').removeClass('transition');    
+                },1000);
+            },120);
+            
         }
         else{
             //document.getElementById('chart_Asset').hidden = true;  
             //document.getElementById('chart_Debt').hidden = true;    
-            document.getElementById('curve_chart').hidden = true; 
-            document.getElementsByClassName('networth-header')[0].hidden = true;
+            $(document.getElementById('curve_chart')).hide(); 
+            document.getElementsByClassName('networth-header')[0].style.visibility = 'hidden';
         }
 
         addValues(dataObj['Asset'],'$','Asset',$elAsset,dataObj.entryGrey);
@@ -176,8 +180,8 @@ function populateNetWorthValues(dataObj,$elAsset,$elDebt){
     else{
         //document.getElementById('chart_Asset').hidden = true;  
         //document.getElementById('chart_Debt').hidden = true; 
-        document.getElementById('curve_chart').hidden = true; 
-        document.getElementsByClassName('networth-header')[0].hidden = true;     
+        $(document.getElementById('curve_chart')).hide(); 
+        document.getElementsByClassName('networth-header')[0].style.visibility = 'hidden';     
     }
 }
 
@@ -185,7 +189,7 @@ function drawLineGraph(){
        let entryTemp = Object.keys(userData.entries), i, 
        currentString = utility.getReferenceStr(userData.currentMonth,userData.currentYear), 
        entryKeys = [];
-       let el = document.getElementById('curve_chart'),
+       let $el = $(document.getElementById('curve_chart')),
        dataArr;
 
        for(i = 0;i < entryTemp.length;i++){
@@ -194,9 +198,9 @@ function drawLineGraph(){
                break;
            }
        }
+       $el.hide(); 
 
        if(entryKeys.length <= 1){
-           el.hidden = true;
            return false;
        }
 
@@ -218,7 +222,7 @@ function drawLineGraph(){
         chart = new google.charts.Line(document.getElementById('curve_chart'));
 
         chart.draw(data, options);
-        el.hidden = false;
+        $el.fadeIn('slow');
 
 }
 

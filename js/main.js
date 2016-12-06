@@ -106,18 +106,18 @@ sources.DOM.select('.logout')
                             div('#chart_Debt')
                         ])
                     ]),
-                    div('.row .networth-header',[
+                    div('.row .networth-header',{style: {visibility: 'hidden'}},[
                         div('.col .s4 .m4 .l4 .assets',[
                             label('Assets: '),
-                            span('.green-text','$100,000')
+                            span('.green-text','')
                         ]),
                         div('.col .s4 .m4 .l4 .debts',[
                             label('Debts: '),
-                            span('.red-text','$45,000')
+                            span('.red-text','')
                         ]),
                         div('.col .s4 .m4 .l4 .networth',[
                             label('Net Worth: '),
-                            span('.green-text .text-darken-3','$55,000')
+                            span('.green-text .text-darken-3','')
                         ])
                     ]),
                     div('.col .s12 .m12 .l12',[
