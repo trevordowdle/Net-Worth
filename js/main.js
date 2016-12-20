@@ -25,8 +25,24 @@ const drivers = {
 //firebase.auth().signOut();
 
 initApp = function() {
+    var userLookup, index;
+    index = location.href.indexOf('user=');
+    if(index >= 0){
+        userLookup = location.href.substring(index+5);
+    }
+    /*
+    if(userLookup){
+        console.log(userLookup);
+        utility.setDatabase(userLookup);
+        Cycle.run(page, drivers);
+        return false;
+    }
+    */
+    //location.href.substring(location.href.indexOf('user=')+5)
     firebase.auth().onAuthStateChanged(function(user) {
         if (user) {
+            userData.accountName = user.displayName;
+            userData.accountURL = user.photoURL;
             utility.setDatabase(user.uid);
             Cycle.run(page, drivers);
         } else {

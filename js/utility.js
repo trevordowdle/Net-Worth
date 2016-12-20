@@ -43,6 +43,14 @@ var utility = function(){
         setDatabase:function(uid){
             userDatabase = firebase.database().ref(uid);    
         },
+        updateProfile:function(){
+            let updateObj = {};
+            if(!userData.entries.displayName){
+                updateObj.displayName = userData.accountName;
+            }
+            updateObj.photoURL = userData.accountURL;
+            userDatabase.update(updateObj);  
+        },
         watchData:function(el){
             
             let firstSnapshot, utilityThis = this;
@@ -51,14 +59,16 @@ var utility = function(){
             $debtEl = $el.find('.debt').next().find('ul li');
 
             userDatabase.on("value", function(snapshot) {
-               userData.entries = snapshot.val() || {};
+               let data = snapshot.val();
+               userData.entries = data.entries || {};
+               userData.displayName = data.displayName;
+               userData.photoURL = data.photoURL;
 
                if(!firstSnapshot){
                    userData.presentMonth = userData.currentMonth;
                    userData.presentYear = userData.currentYear;
-                   
                    firstSnapshot = true;
-                   
+                   utilityThis.updateProfile();
                    let dataObj = utility.getDataObj();
                    populateNetWorthValues(dataObj,$assetEl,$debtEl);
                }
@@ -72,7 +82,7 @@ var utility = function(){
         },
         updateData:function(entry){
             let updateObj = {}, 
-            refStr = this.getReferenceStr(userData.currentMonth,userData.currentYear),
+            refStr = 'entries/'+this.getReferenceStr(userData.currentMonth,userData.currentYear),
             netWorthData;
             if(!userData.entries[refStr]){
                 userData.entries[refStr] = {};
@@ -82,11 +92,16 @@ var utility = function(){
             }
             userData.entries[refStr][entry.type][entry.name] = entry.value;
             netWorthData = this.getNetWorth(userData.entries[refStr]);
-            if(netWorthData.Net){
+            if(netWorthData.Net !== null){
                 updateObj[refStr+'/NetWorth'] = parseFloat(netWorthData.Net).toFixed(2);
                 updateObj[refStr+'/Assets'] = parseFloat(netWorthData.Assets).toFixed(2);
                 updateObj[refStr+'/Debts'] = parseFloat(netWorthData.Debts).toFixed(2);
+            } else{
+                updateObj[refStr+'/NetWorth'] = null;
+                updateObj[refStr+'/Assets'] = null;
+                updateObj[refStr+'/Debts'] = null;
             }
+            this.updateNetWorthValues(netWorthData)
             updateObj[refStr+'/'+entry.type+'/'+entry.name] = entry.value;
             userDatabase.update(updateObj);    
         },
@@ -100,6 +115,18 @@ var utility = function(){
             dateObject.month = date.getMonth() + 1;
             dateObject.year = date.getFullYear();
             return dateObject;    
+        },
+        updateNetWorthValues:function(dataObj){
+            let networthHeader = document.getElementsByClassName('networth-header')[0];
+            if(dataObj.Net !== null){
+                networthHeader.getElementsByClassName('networth')[0].getElementsByTagName('span')[0].textContent = '$' + parseFloat(dataObj.Net).toLocaleString(undefined, {maximumFractionDigits: 0, minimumFractionDigits: 0});
+                networthHeader.getElementsByClassName('assets')[0].getElementsByTagName('span')[0].textContent = '$' + parseFloat(dataObj.Assets).toLocaleString(undefined, {maximumFractionDigits: 0, minimumFractionDigits: 0});
+                networthHeader.getElementsByClassName('debts')[0].getElementsByTagName('span')[0].textContent = '$' + parseFloat(dataObj.Debts).toLocaleString(undefined, {maximumFractionDigits: 0, minimumFractionDigits: 0});
+                networthHeader.style.visibility = "";
+            }
+            else{
+                networthHeader.style.visibility = 'hidden';
+            }
         },
         formatEntry(entry){
             let fractionIndicator = 2; 
@@ -153,7 +180,6 @@ var utility = function(){
                 obj['Debt'] = {};
             }
             Assets = Object.keys(obj['Asset']).reduce((prev,current)=>{
-                debugger;
                 if(obj['Asset'][current] !== null){
                     Hit = true;
                     prev += obj['Asset'][current];
@@ -161,7 +187,6 @@ var utility = function(){
                 return prev;
             },0);
             Debts = Object.keys(obj['Debt']).reduce((prev,current)=>{
-                debugger;
                 if(obj['Debt'][current] !== null){
                     Hit = true;
                     prev += obj['Debt'][current];
@@ -169,7 +194,7 @@ var utility = function(){
                 return prev;
             },0);
             Net = Assets - Debts;
-            return Hit ? {'Net':Net,'Assets':Assets,'Debts':Debts} : null;
+            return Hit ? {'Net':Net,'Assets':Assets,'Debts':Debts} : {'Net':null,'Assets':null,'Debts':null};
         }
     };
 

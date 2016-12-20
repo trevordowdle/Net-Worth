@@ -68,11 +68,20 @@ function sideNavModule(sources){
                                 watchSidebar$.dispose();
                             }   
                         });
+  clickProfile$ = sources.DOM.select('#profile')
+                  .observable
+                  .subscribe((ev)=>{
+                      
+
+                  });
     
   vtree$ = getClicks$.map(()=>
             div([
                 ul('.side-nav .fixed #nav-mobile',[
                     li('.side-nav-top',[
+                        span('#profile',[
+                            img({src:userData.accountURL,style:'width:35px;border-radius:50%;'}),
+                        ]),
                         span('#logo .noselect',[
                             img({src:'https://material.google.com/static/images/nav_google_logo.svg'})
                         ]),
@@ -188,7 +197,8 @@ function populateNetWorthValues(dataObj,$elAsset,$elDebt){
 function drawLineGraph(){
        let entryTemp = Object.keys(userData.entries), i, 
        currentString = utility.getReferenceStr(userData.currentMonth,userData.currentYear), 
-       entryKeys = [];
+       entryKeys = [],
+       networthMonth;
        let $el = $(document.getElementById('curve_chart')),
        dataArr;
 
@@ -205,7 +215,11 @@ function drawLineGraph(){
        }
 
        dataArr = entryKeys.reduce((prev,key)=>{
-           prev.push([key.toString(),parseFloat(userData.entries[key].NetWorth)]);
+           let keyString = key.toString(),
+           month = utility.monthMap[parseInt(keyString.substring(4))],
+           year = keyString.substring(0,4);
+           networthMonth = month + " " + year;
+           prev.push([networthMonth,parseFloat(userData.entries[key].NetWorth)]);
            return prev;
        },[['Month','Net Worth']]);
         
@@ -213,7 +227,7 @@ function drawLineGraph(){
 
         options = {
         chart: {
-          title: 'Box Office Earnings in First Two Weeks of Opening',
+          title: 'Net worth as of '+networthMonth,
           subtitle: 'in millions of dollars (USD)'
         },
         width: 900,

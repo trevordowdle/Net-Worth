@@ -46,10 +46,18 @@ main, nav {
   margin-left:80%;
 }
 
+#profile {
+    display: inline-block;
+    margin-top: 10px;
+    margin-left: 10px;
+    position: absolute;
+    cursor:pointer;
+}
+
 #logo {
     display: inline-block;
     margin-top: 10px;
-    margin-left: 20px;
+    margin-left: 60px;
     position: absolute;
 }
 
@@ -71,21 +79,6 @@ main, nav {
 
 nav {
     height:80px;
-}
-
-.material-icons.arrow {
-    font-size: 48px;
-    position: absolute;
-    top: 10px;
-    cursor: pointer;
-}
-
-.material-icons.arrow.left {
-    left: 13%;
-}
-
-.material-icons.arrow.right {
-    right: 13%;
 }
 
 .noselect {
@@ -213,4 +206,94 @@ ul li a span.entry-grey {
   animation-name: transition;
   animation-duration: 1s;
   animation-fill-mode: both;
+}
+
+/*
+  Arrows
+*/
+
+  button.arrow i {
+    position: absolute;
+    top: 40%;
+    left: 0;
+    width: 25px;
+    height: 5px;
+    border-radius: 2.5px;
+    background: #fff;
+
+    transition: all 0.15s ease;
+  }
+
+button.arrow {
+  -webkit-appearance: none;
+  background: transparent;
+  border: 0;
+  outline: 0;
+  position: relative;
+  margin: 10px;
+  width: 50px;
+  height: 50px;
+  cursor: pointer;
+  transform: translate3d(0,0,0);
+
+  position: absolute;
+  top: 50%;
+  margin-top: -20px;
+  -webkit-filter: drop-shadow( 0 2px 0px rgba(0,0,0,0.2) );
+}
+
+button.arrow.left i:first-child {
+  transform: 
+  translate(0, -1px) rotate(40deg);
+}
+
+button.arrow.left i:last-child {
+    transform: translate(0, 1px) rotate(-40deg);
+}
+
+button.arrow.left i {
+    transform-origin: 0% 50%;
+}
+
+button.arrow.left {
+  left: 13%;
+}
+
+button.arrow.left:hover i:first-child {
+  transform: translate(0, -1px) rotate(30deg);
+}
+button.arrow.left:hover i:last-child {
+  transform: translate(0, 1px) rotate(-30deg);
+}
+button.arrow.left:active i:first-child {
+  transform: translate(1px, -1px) rotate(25deg);
+}
+button.arrow.left:active i:last-child {
+  transform: translate(1px, 1px) rotate(-25deg);
+}
+
+button.arrow.right {
+  right: 13%;
+}
+
+button.arrow.right i {
+  transform-origin: 100% 50%;
+}
+button.arrow.right i:first-child {
+  transform: translate(0, 1px) rotate(40deg);
+}
+button.arrow.right i:last-child {
+  transform: translate(0, -1px) rotate(-40deg);
+}
+button.arrow.right:hover i:first-child {
+  transform: translate(0, 1px) rotate(30deg);
+}
+button.arrow.right:hover i:last-child {
+  transform: translate(0, -1px) rotate(-30deg);
+}
+button.arrow.right:active i:first-child {
+  transform: translate(1px, 1px) rotate(25deg);
+}
+button.arrow.right:active i:last-child {
+  transform: translate(1px, -1px) rotate(-25deg);
 }

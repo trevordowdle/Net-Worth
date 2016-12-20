@@ -25,7 +25,9 @@ var carouselModule;
 
       Rx.Observable.merge(clickStreamRight$, clickStreamLeft$)
                    .subscribe((indicator)=>{
-                       carousel.carousel('next',indicator);         
+                       setTimeout(function(){
+                         carousel.carousel('next',indicator);  
+                       },250)  
                    });
        
       carouselItems = getCarouselDateList();
@@ -48,8 +50,14 @@ var carouselModule;
       vtree$ = Rx.Observable.of(
         div('.carousel-item .' + info.color + ' .white-text',{attrs:{data:{month:info.month,year:info.year}}},[
           h2(info.title),
-          i('.material-icons .arrow .left','keyboard_arrow_left'),
-          i('.material-icons .arrow .right','keyboard_arrow_right')
+          button('.arrow .left',[
+            i(),
+            i()
+          ]),
+          button('.arrow .right',[
+            i(),
+            i()
+          ]),
         ])    
       );
       
