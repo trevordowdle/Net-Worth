@@ -83,7 +83,6 @@ initApp = function() {
     if(index >= 0){
         userLookup = location.href.substring(index+5);
     }
-    debugger;
 
     if(userLookup){
         console.log(userLookup);
