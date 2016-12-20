@@ -69,10 +69,9 @@ function sideNavModule(sources){
                             }   
                         });
   clickProfile$ = sources.DOM.select('#profile')
-                  .observable
+                  .events('click')
                   .subscribe((ev)=>{
-                      
-
+                      location.href = "/profile";
                   });
     
   vtree$ = getClicks$.map(()=>
