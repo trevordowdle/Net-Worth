@@ -55,7 +55,7 @@ function headerModule(sources){
     });
 
     let networthClick$ = sources.DOM.select('.brand-logo').events('click').subscribe(function(ev){
-        location.href = "/";
+        location.href = "/Net-Worth";
     });
 
     let getMouseLeave$ = sources.DOM.select('.nav .nav-wrapper .name').events('mouseenter').map(ev => {
