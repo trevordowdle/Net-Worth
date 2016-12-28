@@ -29,7 +29,7 @@ initApp = function() {
     firebase.auth().onAuthStateChanged(function(user) {
         if (user) {
             userData.accountName = user.displayName;
-            userData.accountURL = user.photoURL;
+            userData.accountURL = user.photoURL || 'img/anony.jpg';
             utility.setDatabase(user.uid);
             Cycle.run(page, drivers);
         } else {
@@ -128,8 +128,10 @@ sources.DOM.select('.logout')
                     ]),
                     div('.col .s12 .m12 .l12',[
                         br(),
-                        p('Hello World!'),
+                        /*
+                        p('Beta Application'),
                         button('.logout','logout'),
+                        */
                         br()
                     ])
                 ])
@@ -143,20 +145,6 @@ sources.DOM.select('.logout')
 
                 
 }
-
-/*
-
-    <div class="row"><div class="col s4 m4 l4"><label>Assets: </label><span class="green-text" style="
-    font-size: 1rem;
-">$100,000</span></div><div class="col s4 m4 l4"><label>Debts: </label><span class="red-text">$45,000</span></div><div class="col s4 m4 l4"><label style="
-    font-size: 1.2rem;
-">Net Worth: </label><span class="green-text text-darken-3" style="
-    font-size: 1.2rem;
-">$55,000</span></div></div>
-
-
-*/
-
 
 /*!
  * Waves v0.6.4

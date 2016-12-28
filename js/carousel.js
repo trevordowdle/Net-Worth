@@ -234,8 +234,8 @@ var carouselModule;
                 }
                 
                 $(el.parentElement).find('.carousel-item').map((index,element)=>{
-                    console.log(userData.presentYear);
-                    console.log(userData.presentMonth);
+                    //console.log(userData.presentYear);
+                    //console.log(userData.presentMonth);
                     element.attrs.data.month = dateList[index].month;
                     element.attrs.data.year = dateList[index].year;
                     element.firstChild.innerText = utility.monthMap[element.attrs.data.month] + ' ' + element.attrs.data.year;

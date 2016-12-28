@@ -45,7 +45,7 @@ var utility = function(){
         },
         updateProfile:function(){
             let updateObj = {};
-            if(!userData.entries.displayName){
+            if(!userData.displayName){
                 updateObj.displayName = userData.accountName;
             }
             updateObj.photoURL = userData.accountURL;
@@ -59,7 +59,7 @@ var utility = function(){
             $debtEl = $el.find('.debt').next().find('ul li');
 
             userDatabase.on("value", function(snapshot) {
-               let data = snapshot.val();
+               let data = snapshot.val() || {};
                userData.entries = data.entries || {};
                userData.displayName = data.displayName;
                userData.photoURL = data.photoURL;
@@ -81,25 +81,22 @@ var utility = function(){
             return year+''+month;
         },
         updateData:function(entry){
-            let updateObj = {}, 
-            refStr = 'entries/'+this.getReferenceStr(userData.currentMonth,userData.currentYear),
+            let updateObj = {},
+            refDate = this.getReferenceStr(userData.currentMonth,userData.currentYear),
+            refStr = 'entries/'+refDate,
             netWorthData;
-            if(!userData.entries[refStr]){
-                userData.entries[refStr] = {};
+            if(!userData.entries[refDate]){
+                userData.entries[refDate] = {};
             }
-            if(!userData.entries[refStr][entry.type]){
-                userData.entries[refStr][entry.type] = {};
+            if(!userData.entries[refDate][entry.type]){
+                userData.entries[refDate][entry.type] = {};
             }
-            userData.entries[refStr][entry.type][entry.name] = entry.value;
-            netWorthData = this.getNetWorth(userData.entries[refStr]);
+            userData.entries[refDate][entry.type][entry.name] = entry.value;
+            netWorthData = this.getNetWorth(userData.entries[refDate]);
             if(netWorthData.Net !== null){
                 updateObj[refStr+'/NetWorth'] = parseFloat(netWorthData.Net).toFixed(2);
                 updateObj[refStr+'/Assets'] = parseFloat(netWorthData.Assets).toFixed(2);
                 updateObj[refStr+'/Debts'] = parseFloat(netWorthData.Debts).toFixed(2);
-            } else{
-                updateObj[refStr+'/NetWorth'] = null;
-                updateObj[refStr+'/Assets'] = null;
-                updateObj[refStr+'/Debts'] = null;
             }
             this.updateNetWorthValues(netWorthData)
             updateObj[refStr+'/'+entry.type+'/'+entry.name] = entry.value;
@@ -172,7 +169,10 @@ var utility = function(){
             return dataObj;
         },
         getNetWorth(obj){
-            let Assets, Debts, Hit = false, Net;
+            let Assets, Debts, Net;
+            if(!obj){
+                obj = {};
+            }
             if(!obj['Asset']){ //create a helper function that will check if something exists and if not create empty obj
                 obj['Asset'] = {};
             }
@@ -181,20 +181,18 @@ var utility = function(){
             }
             Assets = Object.keys(obj['Asset']).reduce((prev,current)=>{
                 if(obj['Asset'][current] !== null){
-                    Hit = true;
                     prev += obj['Asset'][current];
                 }
                 return prev;
             },0);
             Debts = Object.keys(obj['Debt']).reduce((prev,current)=>{
                 if(obj['Debt'][current] !== null){
-                    Hit = true;
                     prev += obj['Debt'][current];
                 }
                 return prev;
             },0);
             Net = Assets - Debts;
-            return Hit ? {'Net':Net,'Assets':Assets,'Debts':Debts} : {'Net':null,'Assets':null,'Debts':null};
+            return {'Net':Net,'Assets':Assets,'Debts':Debts};
         }
     };
 

@@ -17,7 +17,7 @@ var utility = function(){
     
     let $el, $assetEl, $debtEl;
 
-    google.charts.load('current', {'packages':[/*'corechart',*/'line']});
+    google.charts.load('current', {'packages':['corechart','line']});
     google.charts.setOnLoadCallback(()=>{
         //either use promises or somehow use rxjs to combine the data and the chart callback for when both are ready.
         console.log('google charts loaded');
@@ -43,9 +43,14 @@ var utility = function(){
         setDatabase:function(uid){
             userDatabase = firebase.database().ref(uid);    
         },
+        updateUser:function(){
+            let updateObj = {};
+            updateObj.displayName = userData.displayName;
+            userDatabase.update(updateObj);
+        },
         updateProfile:function(){
             let updateObj = {};
-            if(!userData.entries.displayName){
+            if(!userData.displayName){
                 updateObj.displayName = userData.accountName;
             }
             updateObj.photoURL = userData.accountURL;
@@ -57,14 +62,20 @@ var utility = function(){
             $el = $(el);
 
             userDatabase.on("value", function(snapshot) {
-               let data = snapshot.val();
+               let data = snapshot.val() || {};
                userData.entries = data.entries || {};
             
                if(!firstSnapshot){
+                   firstSnapshot = true;
                    userData.displayName = data.displayName;
                    userData.photoURL = data.photoURL;
                    $el.find('.profileImg')[0].src = userData.photoURL;
                    $el.find('.name').text(userData.displayName);
+                   let dateObj = utility.getDateObject();
+                   userData.currentMonth = dateObj.month;
+                   userData.currentYear = dateObj.year;
+                   let dataObj = utility.getDataObj();
+                   populateNetWorthGraph(dataObj);
                    console.log($el);
                }
 
@@ -95,6 +106,39 @@ var utility = function(){
             this.updateNetWorthValues(netWorthData)
             updateObj[refStr+'/'+entry.type+'/'+entry.name] = entry.value;
             userDatabase.update(updateObj);    
+        },
+        getDataObj(){
+            let refString = this.getReferenceStr(userData.currentMonth,userData.currentYear);
+            let dataObj = userData.entries[refString], tempMonth, tempYear;
+            if(!dataObj){
+                tempMonth = userData.currentMonth-1;
+                tempYear = userData.currentYear;
+                if(tempMonth === 0){
+                    tempMonth = 12;
+                    tempYear -= 1;
+                }
+                refString = this.getReferenceStr(tempMonth,tempYear);
+                dataObj = userData.entries[refString];
+                if(dataObj){
+                    dataObj.entryGrey = true;
+                }
+            }
+            return dataObj;
+        },
+        getReferenceStr(month,year){
+            month = month < 10 ? '0'+month : month; 
+            return year+''+month;
+        },
+        getDateObject:function(dateString){
+            let date, dateObject = {};
+            if(dateString){
+                date = new Date(dateString);
+            } 
+            date = date || new Date();
+            dateObject.date = date;
+            dateObject.month = date.getMonth() + 1;
+            dateObject.year = date.getFullYear();
+            return dateObject;    
         }
     };
 

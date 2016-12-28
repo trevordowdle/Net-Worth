@@ -82,7 +82,8 @@ function sideNavModule(sources){
                             img({src:userData.accountURL,style:'width:35px;border-radius:50%;'}),
                         ]),
                         span('#logo .noselect',[
-                            img({src:'https://material.google.com/static/images/nav_google_logo.svg'})
+                            /*img({src:'https://material.google.com/static/images/nav_google_logo.svg'}),*/
+                            img({src:'img/logo.png',style:{'width':'100px'}})
                         ]),
                         a('.add .btn-floating .btn-large .waves-effect .waves-light .green',[
                             i('.material-icons','add')    
