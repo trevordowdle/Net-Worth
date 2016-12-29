@@ -28,7 +28,7 @@ function headerModule(sources){
         .observable
         .subscribe((el)=>{
             if(el.length){
-                utility.watchData(el);
+                utility.watchDataProfile(el);
                 watchNav$.dispose();
             }   
         });
@@ -189,7 +189,7 @@ initApp = function() {
                 utility.setDatabase(user.uid);
                 Cycle.run(page, drivers);
             } else {
-                Cycle.run(loginModule, drivers);    
+                location.href = "/Net-Worth";    
             }
         }, function(error) {
         console.log(error);

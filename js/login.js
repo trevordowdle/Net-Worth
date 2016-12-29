@@ -46,6 +46,7 @@ function loginModule(sources){
                 div('.login-outer',[
                     div('.login-middle',[
                         div('.login-inner .z-depth-4',[
+                            br(),
                             span('#logo2 .noselect',[
                                 /*img({src:'https://material.google.com/static/images/nav_google_logo.svg'}),*/
                                 img({src:'img/logo.png',style:{'width':'100px'}})

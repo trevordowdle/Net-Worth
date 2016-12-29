@@ -3,7 +3,7 @@ var userDatabase,
     userData = {}; // get user database
 
 
-var utility = function(){
+var utility = function(profile){
     
         // Initialize Firebase
     let config = {
@@ -16,8 +16,12 @@ var utility = function(){
     firebase.initializeApp(config);
     
     let $el, $assetEl, $debtEl;
-
-    google.charts.load('current', {'packages':[/*'corechart',*/'line']});
+    if(location.href.indexOf('/profile') >= 0){
+        google.charts.load('current', {'packages':['corechart','line']});    
+    }
+    else{
+        google.charts.load('current', {'packages':[/*'corechart',*/'line']});
+    }
     google.charts.setOnLoadCallback(()=>{
         //either use promises or somehow use rxjs to combine the data and the chart callback for when both are ready.
         console.log('google charts loaded');
@@ -42,6 +46,11 @@ var utility = function(){
         },
         setDatabase:function(uid){
             userDatabase = firebase.database().ref(uid);    
+        },
+        updateUser:function(){
+            let updateObj = {};
+            updateObj.displayName = userData.displayName;
+            userDatabase.update(updateObj);
         },
         updateProfile:function(){
             let updateObj = {};
@@ -71,6 +80,32 @@ var utility = function(){
                    utilityThis.updateProfile();
                    let dataObj = utility.getDataObj();
                    populateNetWorthValues(dataObj,$assetEl,$debtEl);
+               }
+
+            });
+        
+        },
+        watchDataProfile:function(el){
+            
+            let firstSnapshot, utilityThis = this;
+            $el = $(el);
+
+            userDatabase.on("value", function(snapshot) {
+               let data = snapshot.val() || {};
+               userData.entries = data.entries || {};
+            
+               if(!firstSnapshot){
+                   firstSnapshot = true;
+                   userData.displayName = data.displayName;
+                   userData.photoURL = data.photoURL;
+                   $el.find('.profileImg')[0].src = userData.photoURL;
+                   $el.find('.name').text(userData.displayName);
+                   let dateObj = utility.getDateObject();
+                   userData.currentMonth = dateObj.month;
+                   userData.currentYear = dateObj.year;
+                   let dataObj = utility.getDataObj();
+                   populateNetWorthGraph(dataObj);
+                   console.log($el);
                }
 
             });
