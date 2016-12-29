@@ -47,11 +47,17 @@ function loginModule(sources){
                     div('.login-middle',[
                         div('.login-inner .z-depth-4',[
                             span('#logo2 .noselect',[
-                                img({src:'https://material.google.com/static/images/nav_google_logo.svg'})
+                                /*img({src:'https://material.google.com/static/images/nav_google_logo.svg'}),*/
+                                img({src:'img/logo.png',style:{'width':'100px'}})
                             ]),
                             p('Track your Net Worth'),
                             br(),
-                            div('#firebaseui-auth-container')
+                            div('#firebaseui-auth-container'),
+                            div({style:{'padding':'10px'}},[
+                                 a({'href':'terms.html','target':'_blank',style:{'color':'grey'}},[
+                                    span('Terms Of Use')
+                                ])
+                            ])
                         ])
                     ])
                 ])
