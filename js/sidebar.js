@@ -71,7 +71,7 @@ function sideNavModule(sources){
   clickProfile$ = sources.DOM.select('#profile')
                   .events('click')
                   .subscribe((ev)=>{
-                      location.href = "Net-Worth/profile";
+                      location.href = "profile";
                   });
     
   vtree$ = getClicks$.map(()=>
