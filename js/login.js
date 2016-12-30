@@ -27,7 +27,7 @@ function loginModule(sources){
             firebase.auth.EmailAuthProvider.PROVIDER_ID
         ],
         // Terms of service url.
-        'tosUrl': 'index.html'
+        'tosUrl': 'terms.html'
     };
 
   sources.DOM.select('#firebaseui-auth-container')
@@ -56,7 +56,7 @@ function loginModule(sources){
                             div('#firebaseui-auth-container'),
                             div({style:{'padding':'10px'}},[
                                  a({'href':'terms.html','target':'_blank',style:{'color':'grey'}},[
-                                    span('Terms Of Use')
+                                    span('Terms Of Service')
                                 ])
                             ])
                         ])

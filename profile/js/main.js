@@ -124,11 +124,11 @@ function headerModule(sources){
                 ])
             ]),
             br(),
-            br(),
-            br(),
             div('.row',[
-                div('.col .offset-s1 .s10 .offset-m1 .m10 .offset-l2 .l8',{style:{'padding-left':'20px'}},[
-                    div('#curve_chart')
+                div('.col .s12 .offset-m1 .m10 .offset-l2 .l8',{style:{'padding-left':'20px'}},[
+                    div('.card-panel',[
+                        div('#curve_chart')
+                    ])
                 ]),
                 br(),
                 div('.col .offset-s1 .s5 .offset-m1 .m5 .offset-l2 .l4',{style:{'padding-left':'20px'}},[
@@ -208,7 +208,7 @@ function drawLineGraph(){
        entryKeys = [],
        networthMonth;
        let $el = $(document.getElementById('curve_chart')),
-       dataArr;
+       dataArr, width, ratio = 2.2;
 
        for(i = 0;i < entryTemp.length;i++){
            entryKeys.push(entryTemp[i]);
@@ -233,15 +233,26 @@ function drawLineGraph(){
         
         data = google.visualization.arrayToDataTable(dataArr);
 
+        width = $el.parent().width();
+
+        debugger;
+        if(width < 900){
+            ratio = 1.5;
+        }
+
+        if(width < 450){
+            ratio = 1.2;
+        }
+
         options = {
         chart: {
           title: 'Net worth as of '+networthMonth,
           subtitle: 'in millions of dollars (USD)'
         },
-        width: 900,
-        height: 500
+        width: width,
+        height: width/ratio
       };
-        chart = new google.charts.Line(document.getElementById('curve_chart'));
+        chart = new google.charts.Line($el[0]);
 
         chart.draw(data, options);
         $el.fadeIn('slow');

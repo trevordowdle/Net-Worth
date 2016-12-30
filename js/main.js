@@ -27,7 +27,15 @@ const drivers = {
 initApp = function() {
 
     firebase.auth().onAuthStateChanged(function(user) {
+        debugger;
         if (user) {
+            if(user.sendEmailVerification && !user.emailVerified){
+                debugger;
+                if(!localStorage.getItem(user.uid)){
+                    user.sendEmailVerification();
+                    localStorage.setItem(user.uid,'true');   
+                }
+            }
             userData.accountName = user.displayName;
             userData.accountURL = user.photoURL || 'img/anony.jpg';
             utility.setDatabase(user.uid);
