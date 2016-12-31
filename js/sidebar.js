@@ -26,7 +26,7 @@ function sideNavModule(sources){
   let getClickSideBar$ = sources.DOM.select('.collapsible-header').events('click').map(ev => {
     let $target = $(ev.currentTarget);
     $target.toggleClass('active');
-    accordionOpen($target); 
+    accordionToggle($target); 
   }).startWith('');
     
   let getClickAdd$ = sources.DOM.select('.btn-floating.add').events('click').map(ev => {
@@ -120,32 +120,14 @@ function sideNavModule(sources){
 
 }
 
-function accordionOpen(object) {
-    $panel_headers = object.parent().parent().find('> li > .collapsible-header');
-    if (object.hasClass('active')) {
-        object.parent().addClass('active');
-    }
-    else {
-        object.parent().removeClass('active');
-    }
-    if (object.parent().hasClass('active')){
+function accordionToggle(object) {
+
+    if (object.hasClass('active')){
       object.siblings('.collapsible-body').stop(true,false).slideDown({ duration: 350, easing: "easeOutQuart", queue: false, complete: function() {$(this).css('height', '');}});
     }
     else{
       object.siblings('.collapsible-body').stop(true,false).slideUp({ duration: 350, easing: "easeOutQuart", queue: false, complete: function() {$(this).css('height', '');}});
     }
-
-    $panel_headers.not(object).removeClass('active').parent().removeClass('active');
-    $panel_headers.not(object).parent().children('.collapsible-body').stop(true,false).slideUp(
-      {
-        duration: 350,
-        easing: "easeOutQuart",
-        queue: false,
-        complete:
-          function() {
-            $(this).css('height', '');
-          }
-      });
 }
 
 function populateNetWorthValues(dataObj,$elAsset,$elDebt){

@@ -126,7 +126,7 @@ function headerModule(sources){
             br(),
             div('.row',[
                 div('.col .s12 .offset-m1 .m10 .offset-l2 .l8',{style:{'padding-left':'20px'}},[
-                    div('.card-panel',[
+                    div('.card-panel',{style:{opacity:'0'}},[
                         div('#curve_chart')
                     ])
                 ]),
@@ -178,6 +178,7 @@ initApp = function() {
         console.log(userLookup);
         utility.setDatabase(userLookup);
         Cycle.run(page, drivers);
+        document.getElementByClassName('edit')[0].remove();
         return false;
     }
     else{
@@ -206,7 +207,7 @@ function drawLineGraph(){
        let entryTemp = Object.keys(userData.entries), i, 
        currentString = utility.getReferenceStr(userData.currentMonth,userData.currentYear), 
        entryKeys = [],
-       networthMonth;
+       networthMonth, temp;
        let $el = $(document.getElementById('curve_chart')),
        dataArr, width, ratio = 2.2;
 
@@ -222,6 +223,13 @@ function drawLineGraph(){
            return false;
        }
 
+
+       if(entryKeys.length){
+           temp = entryKeys[entryKeys.length-1];
+           userData.currentMonth = temp.substring(4);
+           userData.currentYear = temp.substring(0,4);
+       }
+
        dataArr = entryKeys.reduce((prev,key)=>{
            let keyString = key.toString(),
            month = utility.monthMap[parseInt(keyString.substring(4))],
@@ -235,7 +243,7 @@ function drawLineGraph(){
 
         width = $el.parent().width();
 
-        debugger;
+        //debugger;
         if(width < 900){
             ratio = 1.5;
         }
@@ -320,20 +328,22 @@ function drawPieGraphs(obj,type){
 
 function populateNetWorthGraph(dataObj){
     let networthHeader;
-    if(dataObj){
+
         //Somewhere in here we can initiate the graphs but need to create a uncoupled function so I can use it for updates as well
-        if(!dataObj.entryGrey){
+
             //drawGraph(dataObj['Asset'],'Asset');
             //drawGraph(dataObj['Debt'],'Debt');
             //debugger;
-            drawLineGraph();
-            drawPieGraphs();
-            //document.getElementBy
-            networthHeader = document.getElementsByClassName('networth-header')[0];
-            networthHeader.getElementsByClassName('networth')[0].getElementsByTagName('span')[0].textContent = '$' + parseFloat(dataObj.NetWorth).toLocaleString(undefined, {maximumFractionDigits: 0, minimumFractionDigits: 0});
-            networthHeader.getElementsByClassName('assets')[0].getElementsByTagName('span')[0].textContent = '$' + parseFloat(dataObj.Assets).toLocaleString(undefined, {maximumFractionDigits: 0, minimumFractionDigits: 0});
-            networthHeader.getElementsByClassName('debts')[0].getElementsByTagName('span')[0].textContent = '$' + parseFloat(dataObj.Debts).toLocaleString(undefined, {maximumFractionDigits: 0, minimumFractionDigits: 0});
-            networthHeader.style.visibility = "";
+            if(dataObj){
+                drawLineGraph();
+                drawPieGraphs();
+                //document.getElementBy
+                networthHeader = document.getElementsByClassName('networth-header')[0];
+                networthHeader.getElementsByClassName('networth')[0].getElementsByTagName('span')[0].textContent = '$' + parseFloat(dataObj.NetWorth).toLocaleString(undefined, {maximumFractionDigits: 0, minimumFractionDigits: 0});
+                networthHeader.getElementsByClassName('assets')[0].getElementsByTagName('span')[0].textContent = '$' + parseFloat(dataObj.Assets).toLocaleString(undefined, {maximumFractionDigits: 0, minimumFractionDigits: 0});
+                networthHeader.getElementsByClassName('debts')[0].getElementsByTagName('span')[0].textContent = '$' + parseFloat(dataObj.Debts).toLocaleString(undefined, {maximumFractionDigits: 0, minimumFractionDigits: 0});
+                $('.card-panel').css('opacity',1);
+            }
 
             /*
                         setTimeout(function(){
@@ -343,21 +353,13 @@ function populateNetWorthGraph(dataObj){
                             },1000);
                         },120);
             */
-            
-        }
-        else{
+
             //document.getElementById('chart_Asset').hidden = true;  
             //document.getElementById('chart_Debt').hidden = true;    
-            $(document.getElementById('curve_chart')).hide(); 
-            document.getElementsByClassName('networth-header')[0].style.visibility = 'hidden';
-        }
-    }
-    else{
-        //document.getElementById('chart_Asset').hidden = true;  
-        //document.getElementById('chart_Debt').hidden = true; 
-        $(document.getElementById('curve_chart')).hide(); 
-        document.getElementsByClassName('networth-header')[0].style.visibility = 'hidden';     
-    }
+            //$(document.getElementById('curve_chart')).hide(); 
+            //document.getElementsByClassName('networth-header')[0].style.visibility = 'hidden';
+        
+
 }
 
   

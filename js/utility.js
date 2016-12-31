@@ -42,7 +42,7 @@ var utility = function(profile){
           9: 'September',
           10: 'October',
           11: 'November',
-          12: 'Decemeber'
+          12: 'December'
         },
         setDatabase:function(uid){
             userDatabase = firebase.database().ref(uid);    
@@ -102,7 +102,9 @@ var utility = function(profile){
                    $el.find('.name').text(userData.displayName);
                    let dateObj = utility.getDateObject();
                    userData.currentMonth = dateObj.month;
+                   userData.currentMonth = 1;
                    userData.currentYear = dateObj.year;
+                   userData.currentYear = 2017;
                    let dataObj = utility.getDataObj();
                    populateNetWorthGraph(dataObj);
                    console.log($el);

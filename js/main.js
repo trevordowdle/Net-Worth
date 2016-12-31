@@ -27,10 +27,8 @@ const drivers = {
 initApp = function() {
 
     firebase.auth().onAuthStateChanged(function(user) {
-        debugger;
         if (user) {
             if(user.sendEmailVerification && !user.emailVerified){
-                debugger;
                 if(!localStorage.getItem(user.uid)){
                     user.sendEmailVerification();
                     localStorage.setItem(user.uid,'true');   
