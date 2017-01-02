@@ -44,6 +44,7 @@ var utility = function(profile){
           11: 'November',
           12: 'December'
         },
+        profileEdit:true,
         setDatabase:function(uid){
             userDatabase = firebase.database().ref(uid);    
         },

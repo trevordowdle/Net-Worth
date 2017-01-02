@@ -36,7 +36,7 @@ function headerModule(sources){
     let editMouseClick$ = sources.DOM.select('.nav .nav-wrapper .name .edit').events('click').subscribe(function(ev){
         var parent = $(ev.currentTarget.parentElement.parentElement);
         parent.find('.name').hide();
-        if(userData.accountName){
+        if(userData.displayName){
             parent.find('.input-field.col label').addClass('active');
         }
         else {
@@ -48,6 +48,11 @@ function headerModule(sources){
     let updateMouseClick$ = sources.DOM.select('.nav .nav-wrapper .update').events('click').subscribe(function(ev){
         var parent = $(ev.currentTarget.parentElement.parentElement);
         var val = parent.find('.input-field.col').hide().find('#name').val();
+        if(!val){
+            parent.find('.name').after(parent.find('.name i'));
+            parent.find('.name').show();
+            return false;
+        }
         userData.displayName = val;
         parent.find('.name').after(parent.find('.name i'));
         parent.find('.name').show().text(val);
@@ -67,6 +72,9 @@ function headerModule(sources){
     });
 
     getMouseLeave$.merge(getMouseEnter$).subscribe((ev)=>{
+        if(!utility.profileEdit){
+            return false;
+        }
         let el$ = $(ev.currentTarget);
         if(ev.type === 'mouseenter'){
             el$.append($('.edit').removeClass('hide'));
@@ -168,35 +176,33 @@ function mainModule(sources){
 
 initApp = function() {
 
-    var userLookup, index;
+    var userLookup, index, doc = document;
     index = location.href.indexOf('user=');
     if(index >= 0){
         userLookup = location.href.substring(index+5);
     }
 
-    if(userLookup){
-        console.log(userLookup);
-        utility.setDatabase(userLookup);
-        Cycle.run(page, drivers);
-        document.getElementByClassName('edit')[0].remove();
-        return false;
-    }
-    else{
-        firebase.auth().onAuthStateChanged(function(user) {
-
-            if (user) {
-                userData.accountName = user.displayName;
-                userData.accountURL = user.photoURL || 'img/anony.jpg';
-                utility.setDatabase(user.uid);
-                Cycle.run(page, drivers);
-            } else {
-                location.href = "/Net-Worth";    
+    firebase.auth().onAuthStateChanged(function(user) {
+        if(userLookup){
+            utility.setDatabase(userLookup);
+            Cycle.run(page, drivers);
+            if(!user || (user.uid !== userLookup)){
+                utility.profileEdit = false;
             }
-        }, function(error) {
+        }
+        else if (user) {
+            location.href += '?user='+user.uid;
+            userData.accountName = user.displayName;
+            userData.accountURL = user.photoURL || 'img/anony.jpg';
+            utility.setDatabase(user.uid);
+            Cycle.run(page, drivers);
+        } else {
+            location.href = "/Net-Worth";    
+        }
+    }, function(error) {
         console.log(error);
-        });
-
-    }    
+    });
+ 
 };
 
 window.addEventListener('load', function() {
