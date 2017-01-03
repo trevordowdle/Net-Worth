@@ -210,7 +210,7 @@ function drawLineGraph(){
         options = {
         chart: {
           title: 'Net worth as of '+networthMonth,
-          subtitle: 'in millions of dollars (USD)'
+          subtitle: 'keep progressing!'
         },
         width: 900,
         height: 500
