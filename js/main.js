@@ -26,6 +26,12 @@ const drivers = {
 
 initApp = function() {
 
+    var userLookup, index;
+    index = location.href.indexOf('user=');
+    if(index >= 0){
+        userLookup = location.href.substring(index+5);
+    }
+
     firebase.auth().onAuthStateChanged(function(user) {
         if (user) {
             if(user.sendEmailVerification && !user.emailVerified){
@@ -39,7 +45,17 @@ initApp = function() {
             utility.setDatabase(user.uid);
             Cycle.run(page, drivers);
         } else {
-            Cycle.run(loginModule, drivers);
+            if(userLookup === 'test'){
+                firebase.auth().signInWithEmailAndPassword('test@test.com', 'joejoe').catch(function(error) {
+                    // Handle Errors here.
+                    var errorCode = error.code;
+                    var errorMessage = error.message;
+                    // ...
+                });
+            }
+            else{
+                Cycle.run(loginModule, drivers);
+            }
         }
     }, function(error) {
     console.log(error);

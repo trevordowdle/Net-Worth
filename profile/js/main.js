@@ -28,6 +28,9 @@ function headerModule(sources){
         .observable
         .subscribe((el)=>{
             if(el.length){
+                if(!utility.profileEdit){
+                    el[0].getElementsByClassName('logout')[0].hidden = true;
+                }
                 utility.watchDataProfile(el);
                 watchNav$.dispose();
             }   
@@ -60,6 +63,12 @@ function headerModule(sources){
     });
 
     let networthClick$ = sources.DOM.select('.brand-logo').events('click').subscribe(function(ev){
+        location.href = "/Net-Worth";
+    });
+
+
+    sources.DOM.select('.logout').events('click').subscribe(function(ev){
+        firebase.auth().signOut();
         location.href = "/Net-Worth";
     });
 
@@ -104,6 +113,9 @@ function headerModule(sources){
         div([
             div('.nav',{style:'height:120px;'},[
                 div('.nav-wrapper',[
+                    div('.logout',{style:{padding:'5px',color:'#cecece',cursor:'pointer'}},[
+                        span('Sign Out')
+                    ]),
                     a('.brand-logo .center','NetWorth'),
                     img('.profileImg .center'),
                     label('.name .center'/*,{style:{display:'none'}}*/),
