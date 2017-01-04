@@ -191,7 +191,8 @@ var utility = function(profile){
         getDataObj(){
             let refString = this.getReferenceStr(userData.currentMonth,userData.currentYear);
             let dataObj = userData.entries[refString], tempMonth, tempYear;
-            if(!dataObj){
+            debugger;
+            if(!dataObj || !(dataObj.Asset || dataObj.Debt)){
                 tempMonth = userData.currentMonth-1;
                 tempYear = userData.currentYear;
                 if(tempMonth === 0){
