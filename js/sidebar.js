@@ -121,7 +121,6 @@ function sideNavModule(sources){
 }
 
 function accordionToggle(object) {
-
     if (object.hasClass('active')){
       object.siblings('.collapsible-body').stop(true,false).slideDown({ duration: 350, easing: "easeOutQuart", queue: false, complete: function() {$(this).css('height', '');}});
     }

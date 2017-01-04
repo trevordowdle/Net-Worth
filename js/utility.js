@@ -138,7 +138,8 @@ var utility = function(profile){
             }
             this.updateNetWorthValues(netWorthData)
             updateObj[refStr+'/'+entry.type+'/'+entry.name] = entry.value;
-            userDatabase.update(updateObj);    
+            userDatabase.update(updateObj);
+            utility.populateValues(true); 
         },
         getDateObject:function(dateString){
             let date, dateObject = {};
@@ -184,14 +185,16 @@ var utility = function(profile){
 
             return entry;    
         },
-        populateValues(){
+        populateValues(fromUpdate){
             let dataObj = this.getDataObj();
+            if(fromUpdate && $('.side-nav li:nth-child(2) .entry-grey').length){
+                return false;
+            }
             populateNetWorthValues(dataObj,$assetEl,$debtEl);
         },
         getDataObj(){
             let refString = this.getReferenceStr(userData.currentMonth,userData.currentYear);
             let dataObj = userData.entries[refString], tempMonth, tempYear;
-            debugger;
             if(!dataObj || !(dataObj.Asset || dataObj.Debt)){
                 tempMonth = userData.currentMonth-1;
                 tempYear = userData.currentYear;
