@@ -103,10 +103,9 @@ var utility = function(profile){
                    $el.find('.name').text(userData.displayName);
                    let dateObj = utility.getDateObject();
                    userData.currentMonth = dateObj.month;
-                   userData.currentMonth = 1;
                    userData.currentYear = dateObj.year;
-                   userData.currentYear = 2017;
                    let dataObj = utility.getDataObj();
+                   debugger;
                    populateNetWorthGraph(dataObj);
                    console.log($el);
                }
@@ -131,10 +130,16 @@ var utility = function(profile){
             }
             userData.entries[refDate][entry.type][entry.name] = entry.value;
             netWorthData = this.getNetWorth(userData.entries[refDate]);
+            debugger;
             if(netWorthData.Net !== null){
                 updateObj[refStr+'/NetWorth'] = parseFloat(netWorthData.Net).toFixed(2);
                 updateObj[refStr+'/Assets'] = parseFloat(netWorthData.Assets).toFixed(2);
                 updateObj[refStr+'/Debts'] = parseFloat(netWorthData.Debts).toFixed(2);
+            }
+            else{
+                updateObj[refStr+'/NetWorth'] = null;
+                updateObj[refStr+'/Assets'] = null;
+                updateObj[refStr+'/Debts'] = null;    
             }
             this.updateNetWorthValues(netWorthData)
             updateObj[refStr+'/'+entry.type+'/'+entry.name] = entry.value;
@@ -212,7 +217,7 @@ var utility = function(profile){
             return dataObj;
         },
         getNetWorth(obj){
-            let Assets, Debts, Net;
+            let Assets, Debts, Net, assetKeys, debtKeys, hit = false;
             if(!obj){
                 obj = {};
             }
@@ -222,19 +227,27 @@ var utility = function(profile){
             if(!obj['Debt']){ //create a helper function that will check if something exists and if not create empty obj
                 obj['Debt'] = {};
             }
-            Assets = Object.keys(obj['Asset']).reduce((prev,current)=>{
+            assetKeys = Object.keys(obj['Asset']);
+            debtKeys = Object.keys(obj['Debt']);
+            
+            Assets = assetKeys.reduce((prev,current)=>{
                 if(obj['Asset'][current] !== null){
                     prev += obj['Asset'][current];
+                    hit = true;
                 }
                 return prev;
             },0);
-            Debts = Object.keys(obj['Debt']).reduce((prev,current)=>{
+            Debts = debtKeys.reduce((prev,current)=>{
                 if(obj['Debt'][current] !== null){
+                    hit = true;
                     prev += obj['Debt'][current];
                 }
                 return prev;
             },0);
             Net = Assets - Debts;
+            if(!hit){
+                return {'Net':null};
+            }
             return {'Net':Net,'Assets':Assets,'Debts':Debts};
         }
     };
