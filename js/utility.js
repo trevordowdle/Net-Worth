@@ -105,7 +105,6 @@ var utility = function(profile){
                    userData.currentMonth = dateObj.month;
                    userData.currentYear = dateObj.year;
                    let dataObj = utility.getDataObj();
-                   debugger;
                    populateNetWorthGraph(dataObj);
                    console.log($el);
                }
@@ -130,7 +129,6 @@ var utility = function(profile){
             }
             userData.entries[refDate][entry.type][entry.name] = entry.value;
             netWorthData = this.getNetWorth(userData.entries[refDate]);
-            debugger;
             if(netWorthData.Net !== null){
                 updateObj[refStr+'/NetWorth'] = parseFloat(netWorthData.Net).toFixed(2);
                 updateObj[refStr+'/Assets'] = parseFloat(netWorthData.Assets).toFixed(2);

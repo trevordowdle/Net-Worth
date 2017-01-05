@@ -244,7 +244,7 @@ function drawLineGraph(){
 
        if(entryKeys.length){
            temp = entryKeys[entryKeys.length-1];
-           userData.currentMonth = temp.substring(4);
+           userData.currentMonth = parseInt(temp.substring(4));
            userData.currentYear = temp.substring(0,4);
        }
 
