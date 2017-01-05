@@ -188,6 +188,7 @@ var utility = function(profile){
         populateValues(fromUpdate){
             let dataObj = this.getDataObj();
             if(fromUpdate && $('.side-nav li:nth-child(2) .entry-grey').length){
+                drawLineGraph();
                 return false;
             }
             populateNetWorthValues(dataObj,$assetEl,$debtEl);
