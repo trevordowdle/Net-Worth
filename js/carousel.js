@@ -217,7 +217,6 @@ var carouselModule;
           // Don't show wrapped items.
           if (!options.no_wrap || (center >= 0 && center < count)) {
             el = images[wrap(center)];
-              
             if(timeFrameInfo.month !== el.attrs.data.month || timeFrameInfo.year !== el.attrs.data.year){
                 let $el, indexOffset, updateEl, temp;
                 timeFrameInfo.month = el.attrs.data.month;
@@ -240,7 +239,6 @@ var carouselModule;
                     element.attrs.data.year = dateList[index].year;
                     element.firstChild.innerText = utility.monthMap[element.attrs.data.month] + ' ' + element.attrs.data.year;
                 });
-                
                 utility.populateValues(); // other logic here.
 
             }

@@ -47,7 +47,7 @@ function sideNavModule(sources){
           index = 1;
       }
       infoItems = item.firstChild.innerText.split(' - ');
-      infoItems[1] = infoItems[1].replace(/,/g, "").substring(index);
+      infoItems[1] = infoItems[1]/*.replace(/,/g, "")*/.substring(index);
 
       $('#modal2').find('select')[0].disabled = true;
       $('#modal2').find('select').val(itemType).material_select();
@@ -176,12 +176,18 @@ function populateNetWorthValues(dataObj,$elAsset,$elDebt){
 }
 
 function drawLineGraph(){
+       debugger;
        let entryTemp = Object.keys(userData.entries), i, 
        currentString = utility.getReferenceStr(userData.currentMonth,userData.currentYear), 
        entryKeys = [],
        networthMonth;
        let $el = $(document.getElementById('curve_chart')),
        dataArr;
+
+       if(!userData.entries[currentString]){  //Stop graph from generating if nothing on current month.
+           $(document.getElementById('curve_chart')).hide(); 
+           return false;
+       }
 
        for(i = 0;i < entryTemp.length;i++){
            entryKeys.push(entryTemp[i]);

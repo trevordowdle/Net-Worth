@@ -24,6 +24,7 @@ function modalModule(sources,options){
   });
     
   //let modalAdd$ = sources.DOM.select('.modal .modal-action').events('click').map(options.doClick);
+
     
   let watchSelect$ = sources.DOM.select('select')
                        .observable
@@ -34,6 +35,13 @@ function modalModule(sources,options){
                                 watchSelect$.dispose();
                             }   
                         });
+
+  sources.DOM.select('#value').events('keyup')
+  .subscribe((ev)=>{
+    if(/[^\d.,]/.test(ev.target.value)){
+      ev.target.value = ev.target.value.replace(/[^\d.,]/g, '');
+    }
+  });
 
   let getFocus$ = sources.DOM.select('.input-field input:not(.select-dropdown)').events('focus').map(ev => {
     ev.currentTarget.nextSibling.className = "active";
@@ -75,7 +83,7 @@ function modalModule(sources,options){
                         label('Name')
                       ]),
                       div('.input-field .col .s3',[
-                        input('#value .validate',{type:'number'}),
+                        input('#value .validate'),
                         label('Value')
                       ])
                     ])
@@ -96,20 +104,56 @@ function modalModule(sources,options){
 
 }
 
+
+toastMap = {
+  'Choose Entry Type':'You need to specify whether this entry is an Asset or a Debt.',
+  'AssetName':'You must specify a name for your asset.',
+  'DebtName':'You must specify a name for your debt.',
+  'AssetValue':'You must specify how much your asset is worth.',
+  'DebtValue':'You must specify the amount of your debt.'
+}
+
+/*
+
+      if(temp === 'value' && entry.type === 'Asset'){
+        Materialize.toast('You must specify how much your asset is worth.', 4000);
+      }
+      else if(temp === 'value' && entry.type === 'Debt'){
+        Materialize.toast('You must specify the amount of your debt.', 4000);  
+      }
+      else if(temp === 'value'){
+
+      }
+      else {
+        Materialize.toast((temp[0].toUpperCase() + temp.substring(1)) + ' is a required field.', 4000);
+      }
+
+*/
+
 addClick = (ev)=>{
-      let invalid = false, $modal, $inputs, temp, path, entry = {};
+      let invalid = false, $modal, $inputs, temp, path, entry = {}, toastString;
       $modal = $(ev.currentTarget.closest('.modal'));
       $inputs = $modal.find('.modal-content input');
       $inputs.each((index,el)=>{
         if(!el.value || el.value === 'Choose Entry Type'){
-          temp = el.id || 'type';
-          Materialize.toast((temp[0].toUpperCase() + temp.substring(1)) + ' is a required field.', 4000);
+          //temp = el.id || 'type';
+          //Materialize.toast((temp[0].toUpperCase() + temp.substring(1)) + ' is a required field.', 4000);
           invalid = true;
         }
         entry[el.id || 'type'] = el.value;
       });
       
       if(invalid){
+        toastString = entry.type;
+        if(toastString === 'Asset' || toastString === 'Debt'){
+          if(!entry.name){
+            toastString += 'Name';
+          }
+          else if(!entry.value){
+            toastString += 'Value';
+          }
+        }
+        Materialize.toast(toastMap[toastString], 4000);
         console.log('invalid');
       }
       else {        

@@ -353,8 +353,6 @@ function populateNetWorthGraph(dataObj){
             //drawGraph(dataObj['Debt'],'Debt');
             //debugger;
             if(dataObj){
-                drawLineGraph();
-                drawPieGraphs();
                 //document.getElementBy
                 networthHeader = document.getElementsByClassName('networth-header')[0];
                 networthHeader.getElementsByClassName('networth')[0].getElementsByTagName('span')[0].textContent = '$' + parseFloat(dataObj.NetWorth).toLocaleString(undefined, {maximumFractionDigits: 0, minimumFractionDigits: 0});
@@ -362,6 +360,9 @@ function populateNetWorthGraph(dataObj){
                 networthHeader.getElementsByClassName('debts')[0].getElementsByTagName('span')[0].textContent = '$' + parseFloat(dataObj.Debts).toLocaleString(undefined, {maximumFractionDigits: 0, minimumFractionDigits: 0});
                 $('.card-panel').css('opacity',1);
                 networthHeader.style.visibility = "";
+
+                drawLineGraph();
+                drawPieGraphs();
             }
 
             /*

@@ -180,7 +180,15 @@ var utility = function(profile){
                 entry.prefix = '$';
             }
 
-            entry.value = Math.abs(entry.value);
+            if(typeof entry.value === "string"){
+                entry.value = parseFloat(entry.value.replace(/,/g,''));
+            }
+
+            if (isNaN(entry.value)) {
+                entry.value = 0;
+            }
+
+            //entry.value = Math.abs(entry.value);
             if(entry.value % 1 === 0){
                 fractionIndicator = 0;    
             }
@@ -211,6 +219,9 @@ var utility = function(profile){
                 if(dataObj){
                     dataObj.entryGrey = true;
                 }
+            }
+            else if(dataObj){
+                dataObj.entryGrey = false;
             }
             return dataObj;
         },
