@@ -152,10 +152,14 @@ function headerModule(sources){
                 ]),
                 br(),
                 div('.col .offset-s1 .s5 .offset-m1 .m5 .offset-l2 .l4',{style:{'padding-left':'20px'}},[
-                    div('#pie_chart1')
+                    div('.card-panel',[
+                        div('#pie_chart1')
+                    ])
                 ]),
-                div('.col .s6 .m6 .l6',[
-                    div('#pie_chart2')
+                div('.col .s5 .m5 .l4',[
+                    div('.card-panel',[
+                        div('#pie_chart2')
+                    ])
                 ])
             ]),
             br(),
@@ -286,7 +290,8 @@ function drawLineGraph(){
 }
 
 function drawPieGraphs(obj,type){
-    let rows = [], chart, el = document.getElementById('pie_chart1'), el2 = document.getElementById('pie_chart2');
+    let rows = [], chart, el = document.getElementById('pie_chart1'), el2 = document.getElementById('pie_chart2'),
+    dataArr, width, ratio = 2.2;
 
     let currentString = utility.getReferenceStr(userData.currentMonth,userData.currentYear);
 
@@ -302,9 +307,21 @@ function drawPieGraphs(obj,type){
         });
     }
 
+    width = $(el).parent().width();
+    width = width + (.05*width);
+
+    //debugger;
+    if(width < 900){
+        ratio = 1.5;
+    }
+
+    if(width < 450){
+        ratio = 1.2;
+    }
+
     let options = {'title':'Asset Allocation',
-                'width':440,
-                'height':330};
+                width: width,
+                height: width/ratio};
 
     if(rows.length){
         data.addRows(rows); 
