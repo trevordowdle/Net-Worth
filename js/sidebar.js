@@ -79,7 +79,7 @@ function sideNavModule(sources){
                 ul('.side-nav .fixed #nav-mobile',[
                     li('.side-nav-top',[
                         span('#profile',[
-                            img({src:userData.accountURL,style:'width:35px;border-radius:50%;'}),
+                            img({src:userData.accountURL,style:{width:'35px','border-radius':'50%'}}),
                         ]),
                         span('#logo .noselect',[
                             /*img({src:'https://material.google.com/static/images/nav_google_logo.svg'}),*/
