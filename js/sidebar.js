@@ -176,10 +176,11 @@ function populateNetWorthValues(dataObj,$elAsset,$elDebt){
 }
 
 function drawLineGraph(){
-       debugger;
        let entryTemp = Object.keys(userData.entries), i, 
        currentString = utility.getReferenceStr(userData.currentMonth,userData.currentYear), 
        entryKeys = [],
+       width,
+       ratio = 1.8,
        networthMonth;
        let $el = $(document.getElementById('curve_chart')),
        dataArr;
@@ -212,13 +213,24 @@ function drawLineGraph(){
         
         data = google.visualization.arrayToDataTable(dataArr);
 
+        width = $el.parent().width();
+
+        //debugger;
+        if(width < 900){
+            ratio = 1.5;
+        }
+
+        if(width < 450){
+            ratio = .9;
+        }
+
         options = {
         chart: {
           title: 'Net worth as of '+networthMonth,
           subtitle: 'keep progressing!'
         },
-        width: 900,
-        height: 500
+        width: width,
+        height: width/ratio
       };
         chart = new google.charts.Line(document.getElementById('curve_chart'));
 
