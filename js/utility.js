@@ -92,19 +92,21 @@ var utility = function(profile){
             $el = $(el);
 
             userDatabase.on("value", function(snapshot) {
-               let data = snapshot.val() || {};
+               let data = snapshot.val() || {}, i;
                userData.entries = data.entries || {};
             
                if(!firstSnapshot){
                    firstSnapshot = true;
                    userData.displayName = data.displayName;
                    userData.photoURL = data.photoURL;
+                   userData.keys = Object.keys(userData.entries);
                    $el.find('.profileImg')[0].src = userData.photoURL;
                    $el.find('.name').text(userData.displayName);
                    let dateObj = utility.getDateObject();
                    userData.currentMonth = dateObj.month;
                    userData.currentYear = dateObj.year;
                    let dataObj = utility.getDataObj();
+                   userData.monthString = utility.getMonthString();
                    populateNetWorthGraph(dataObj);
                    console.log($el);
                }
@@ -112,37 +114,15 @@ var utility = function(profile){
             });
         
         },
+        getMonthString(){
+            let keyString = userData.keys[userData.lookup],
+                month = utility.monthMap[parseInt(keyString.substring(4))],
+                year = keyString.substring(0,4);
+            return month + " " + year;
+        },
         getReferenceStr(month,year){
             month = month < 10 ? '0'+month : month; 
             return year+''+month;
-        },
-        updateData:function(entry){
-            let updateObj = {},
-            refDate = this.getReferenceStr(userData.currentMonth,userData.currentYear),
-            refStr = 'entries/'+refDate,
-            netWorthData;
-            if(!userData.entries[refDate]){
-                userData.entries[refDate] = {};
-            }
-            if(!userData.entries[refDate][entry.type]){
-                userData.entries[refDate][entry.type] = {};
-            }
-            userData.entries[refDate][entry.type][entry.name] = entry.value;
-            netWorthData = this.getNetWorth(userData.entries[refDate]);
-            if(netWorthData.Net !== null){
-                updateObj[refStr+'/NetWorth'] = parseFloat(netWorthData.Net).toFixed(2);
-                updateObj[refStr+'/Assets'] = parseFloat(netWorthData.Assets).toFixed(2);
-                updateObj[refStr+'/Debts'] = parseFloat(netWorthData.Debts).toFixed(2);
-            }
-            else{
-                updateObj[refStr+'/NetWorth'] = null;
-                updateObj[refStr+'/Assets'] = null;
-                updateObj[refStr+'/Debts'] = null;    
-            }
-            this.updateNetWorthValues(netWorthData)
-            updateObj[refStr+'/'+entry.type+'/'+entry.name] = entry.value;
-            userDatabase.update(updateObj);
-            utility.populateValues(true); 
         },
         getDateObject:function(dateString){
             let date, dateObject = {};
@@ -196,32 +176,23 @@ var utility = function(profile){
 
             return entry;    
         },
-        populateValues(fromUpdate){
-            let dataObj = this.getDataObj();
-            if(fromUpdate && $('.side-nav li:nth-child(2) .entry-grey').length){
-                drawLineGraph();
-                return false;
-            }
-            populateNetWorthValues(dataObj,$assetEl,$debtEl);
-        },
         getDataObj(){
-            let refString = this.getReferenceStr(userData.currentMonth,userData.currentYear);
-            let dataObj = userData.entries[refString], tempMonth, tempYear;
-            if(!dataObj || !(dataObj.Asset || dataObj.Debt)){
-                tempMonth = userData.currentMonth-1;
-                tempYear = userData.currentYear;
-                if(tempMonth === 0){
-                    tempMonth = 12;
-                    tempYear -= 1;
-                }
-                refString = this.getReferenceStr(tempMonth,tempYear);
-                dataObj = userData.entries[refString];
-                if(dataObj){
-                    dataObj.entryGrey = true;
+            let refString = this.getReferenceStr(userData.currentMonth,userData.currentYear),
+                dataObj, i;
+            for(i = 0;i < userData.keys.length;i++){
+                if(userData.keys[i] === refString){
+                    userData.lookup = i;
+                    userData.keys = userData.keys.slice(0,i+1);
+                    break;
                 }
             }
-            else if(dataObj){
-                dataObj.entryGrey = false;
+
+            if(!userData.lookup){
+                userData.lookup = userData.keys.length-1;
+                dataObj = userData.entries[userData.lookup-1];
+            }
+            else{
+                dataObj = userData.entries[refString];
             }
             return dataObj;
         },

@@ -106,7 +106,19 @@ function headerModule(sources){
             ev.currentTarget.nextSibling.className = "";
         }
     }).startWith('').subscribe(function(){
+        console.log('blur');
+    });
 
+    getClick$ = sources.DOM.select('.arrow.left').events('click').subscribe(function(){
+        userData.lookup -= 1;
+        userData.monthString = utility.getMonthString();
+        populateNetWorthGraph(userData.entries[userData.keys[userData.lookup]]);
+    });
+
+    getClick$ = sources.DOM.select('.arrow.right').events('click').subscribe(function(){
+        userData.lookup += 1;
+        userData.monthString = utility.getMonthString();
+        populateNetWorthGraph(userData.entries[userData.keys[userData.lookup]]);
     });
 
     let vtree$ = Rx.Observable.of(
@@ -130,6 +142,19 @@ function headerModule(sources){
             br(),
             br(),
             div('.row .networth-header',{style: {visibility: 'hidden','padding-left':'10px'}},[
+                div('.col .s12 .m12 .l12 .navigate',[
+            button('.arrow .left',{style:{display:'inline-block'}},[
+            i(),
+            i()
+          ]),
+          div({style:{display:'inline-block',width:'115px','text-align':'center'}},[
+              label('.nav-title','December 2016')
+          ]),
+          button('.arrow .right',{style:{display:'inline-block'}},[
+            i(),
+            i()
+          ])
+                ]),
                 div('.col .s12 .m12 .l12 .assets',[
                     label('Assets: '),
                     span('.green-text','')
@@ -225,17 +250,29 @@ window.addEventListener('load', function() {
     initApp();
 });
 
+function updateView(){
+    $('.arrow').css('display','inline-block');
+    $('#curve_chart').parent().show();
+    if(userData.lookup === userData.keys.length-1){
+        $('.arrow.right').hide();
+    }
+    if(userData.lookup === 0){
+        $('.arrow.left').hide();
+        $('#curve_chart').parent().hide();
+    }
+}
+
 function drawLineGraph(){
-       let entryTemp = Object.keys(userData.entries), i, 
-       currentString = utility.getReferenceStr(userData.currentMonth,userData.currentYear), 
+       let i, 
+       currentString = userData.keys[userData.lookup], 
        entryKeys = [],
        networthMonth, temp;
        let $el = $(document.getElementById('curve_chart')),
        dataArr, width, ratio = 2.2;
 
-       for(i = 0;i < entryTemp.length;i++){
-           entryKeys.push(entryTemp[i]);
-           if(entryTemp[i] === currentString){
+       for(i = 0;i < userData.keys.length;i++){
+           entryKeys.push(userData.keys[i]);
+           if(userData.keys[i] === currentString){
                break;
            }
        }
@@ -244,7 +281,6 @@ function drawLineGraph(){
        if(entryKeys.length <= 1){
            return false;
        }
-
 
        if(entryKeys.length){
            temp = entryKeys[entryKeys.length-1];
@@ -263,7 +299,7 @@ function drawLineGraph(){
         
         data = google.visualization.arrayToDataTable(dataArr);
 
-        width = $el.parent().width();
+        width = $el.parent().width()-5;
 
         //debugger;
         if(width < 900){
@@ -277,7 +313,7 @@ function drawLineGraph(){
         options = {
         chart: {
           title: 'Net worth as of '+networthMonth,
-          subtitle: 'in millions of dollars (USD)'
+          subtitle: ''
         },
         width: width,
         height: width/ratio
@@ -293,7 +329,7 @@ function drawPieGraphs(obj,type){
     let rows = [], chart, el = document.getElementById('pie_chart1'), el2 = document.getElementById('pie_chart2'),
     dataArr, width, ratio = 2.2;
 
-    let currentString = utility.getReferenceStr(userData.currentMonth,userData.currentYear);
+    let currentString = userData.keys[userData.lookup];
 
     // Create the data table.
     let data = new google.visualization.DataTable();
@@ -364,38 +400,21 @@ function drawPieGraphs(obj,type){
 function populateNetWorthGraph(dataObj){
     let networthHeader;
 
-        //Somewhere in here we can initiate the graphs but need to create a uncoupled function so I can use it for updates as well
-
-            //drawGraph(dataObj['Asset'],'Asset');
-            //drawGraph(dataObj['Debt'],'Debt');
-            //debugger;
             if(dataObj){
+                updateView();
+                //nav-title
+                //userData.monthString
                 //document.getElementBy
                 networthHeader = document.getElementsByClassName('networth-header')[0];
+                networthHeader.getElementsByClassName('nav-title')[0].textContent = userData.monthString;
                 networthHeader.getElementsByClassName('networth')[0].getElementsByTagName('span')[0].textContent = '$' + parseFloat(dataObj.NetWorth).toLocaleString(undefined, {maximumFractionDigits: 0, minimumFractionDigits: 0});
                 networthHeader.getElementsByClassName('assets')[0].getElementsByTagName('span')[0].textContent = '$' + parseFloat(dataObj.Assets).toLocaleString(undefined, {maximumFractionDigits: 0, minimumFractionDigits: 0});
                 networthHeader.getElementsByClassName('debts')[0].getElementsByTagName('span')[0].textContent = '$' + parseFloat(dataObj.Debts).toLocaleString(undefined, {maximumFractionDigits: 0, minimumFractionDigits: 0});
                 $('.card-panel').css('opacity',1);
                 networthHeader.style.visibility = "";
-
                 drawLineGraph();
                 drawPieGraphs();
-            }
-
-            /*
-                        setTimeout(function(){
-                            $('.networth-header .networth').addClass('transition');
-                            setTimeout(()=>{
-                                $('.networth-header .networth').removeClass('transition');    
-                            },1000);
-                        },120);
-            */
-
-            //document.getElementById('chart_Asset').hidden = true;  
-            //document.getElementById('chart_Debt').hidden = true;    
-            //$(document.getElementById('curve_chart')).hide(); 
-            //document.getElementsByClassName('networth-header')[0].style.visibility = 'hidden';
-        
+            }        
 
 }
 

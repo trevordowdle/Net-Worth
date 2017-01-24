@@ -213,7 +213,7 @@ function drawLineGraph(){
         
         data = google.visualization.arrayToDataTable(dataArr);
 
-        width = $el.parent().width();
+        width = $el.parent().width()-10;
 
         //debugger;
         if(width < 900){
