@@ -249,7 +249,7 @@ var utility = function(profile){
 
             if(!userData.lookup){
                 userData.lookup = userData.keys.length-1;
-                dataObj = userData.entries[userData.lookup-1];
+                dataObj = userData.entries[userData.keys[userData.lookup]];
             }
             else{
                 dataObj = userData.entries[refString];
