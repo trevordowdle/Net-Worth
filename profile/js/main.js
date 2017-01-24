@@ -402,9 +402,6 @@ function populateNetWorthGraph(dataObj){
 
             if(dataObj){
                 updateView();
-                //nav-title
-                //userData.monthString
-                //document.getElementBy
                 networthHeader = document.getElementsByClassName('networth-header')[0];
                 networthHeader.getElementsByClassName('nav-title')[0].textContent = userData.monthString;
                 networthHeader.getElementsByClassName('networth')[0].getElementsByTagName('span')[0].textContent = '$' + parseFloat(dataObj.NetWorth).toLocaleString(undefined, {maximumFractionDigits: 0, minimumFractionDigits: 0});
