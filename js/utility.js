@@ -105,7 +105,7 @@ var utility = function(profile){
                    let dateObj = utility.getDateObject();
                    userData.currentMonth = dateObj.month;
                    userData.currentYear = dateObj.year;
-                   let dataObj = utility.getDataObj();
+                   let dataObj = utility.getDataObjProfile();
                    userData.monthString = utility.getMonthString();
                    populateNetWorthGraph(dataObj);
                    console.log($el);
@@ -124,6 +124,34 @@ var utility = function(profile){
             month = month < 10 ? '0'+month : month; 
             return year+''+month;
         },
+        updateData:function(entry){		
+             let updateObj = {},		
+             refDate = this.getReferenceStr(userData.currentMonth,userData.currentYear),		
+             refStr = 'entries/'+refDate,		
+             netWorthData;		
+             if(!userData.entries[refDate]){		
+                 userData.entries[refDate] = {};		
+             }		
+             if(!userData.entries[refDate][entry.type]){		
+                 userData.entries[refDate][entry.type] = {};		
+             }		
+             userData.entries[refDate][entry.type][entry.name] = entry.value;		
+             netWorthData = this.getNetWorth(userData.entries[refDate]);		
+             if(netWorthData.Net !== null){		
+                 updateObj[refStr+'/NetWorth'] = parseFloat(netWorthData.Net).toFixed(2);		
+                 updateObj[refStr+'/Assets'] = parseFloat(netWorthData.Assets).toFixed(2);		
+                 updateObj[refStr+'/Debts'] = parseFloat(netWorthData.Debts).toFixed(2);		
+             }		
+             else{		
+                 updateObj[refStr+'/NetWorth'] = null;		
+                 updateObj[refStr+'/Assets'] = null;		
+                 updateObj[refStr+'/Debts'] = null;    		
+             }		
+             this.updateNetWorthValues(netWorthData)		
+             updateObj[refStr+'/'+entry.type+'/'+entry.name] = entry.value;		
+             userDatabase.update(updateObj);		
+             utility.populateValues(true); 		
+        },
         getDateObject:function(dateString){
             let date, dateObject = {};
             if(dateString){
@@ -134,6 +162,14 @@ var utility = function(profile){
             dateObject.month = date.getMonth() + 1;
             dateObject.year = date.getFullYear();
             return dateObject;    
+        },
+        populateValues(fromUpdate){		
+             let dataObj = this.getDataObj();		
+             if(fromUpdate && $('.side-nav li:nth-child(2) .entry-grey').length){		
+                 drawLineGraph();		
+                 return false;		
+             }		
+             populateNetWorthValues(dataObj,$assetEl,$debtEl);		
         },
         updateNetWorthValues:function(dataObj){
             let networthHeader = document.getElementsByClassName('networth-header')[0];
@@ -177,8 +213,32 @@ var utility = function(profile){
             return entry;    
         },
         getDataObj(){
+             let refString = this.getReferenceStr(userData.currentMonth,userData.currentYear);
+             let dataObj = userData.entries[refString], tempMonth, tempYear;
+             if(!dataObj || !(dataObj.Asset || dataObj.Debt)){
+                 tempMonth = userData.currentMonth-1;
+                 tempYear = userData.currentYear;
+                 if(tempMonth === 0){
+                     tempMonth = 12;
+                     tempYear -= 1;
+                 }
+                 refString = this.getReferenceStr(tempMonth,tempYear);
+                 dataObj = userData.entries[refString];
+                 if(dataObj){
+                     dataObj.entryGrey = true;
+                 }
+             }
+             else if(dataObj){
+                 dataObj.entryGrey = false;
+             }
+            
+             return dataObj;
+        },  
+        getDataObjProfile(){
             let refString = this.getReferenceStr(userData.currentMonth,userData.currentYear),
                 dataObj, i;
+            
+            
             for(i = 0;i < userData.keys.length;i++){
                 if(userData.keys[i] === refString){
                     userData.lookup = i;
