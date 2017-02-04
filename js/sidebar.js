@@ -150,11 +150,11 @@ function populateNetWorthValues(dataObj,$elAsset,$elDebt){
     $elDebt.empty();
     if(dataObj){
         //Somewhere in here we can initiate the graphs but need to create a uncoupled function so I can use it for updates as well
-        if(!dataObj.entryGrey){
+
             //drawGraph(dataObj['Asset'],'Asset');
             //drawGraph(dataObj['Debt'],'Debt');
             //debugger;
-            drawLineGraph();
+            drawLineGraph(dataObj.entryGrey);
             //document.getElementBy
             networthHeader = document.getElementsByClassName('networth-header')[0];
             networthHeader.getElementsByClassName('networth')[0].getElementsByTagName('span')[0].textContent = '$' + parseFloat(dataObj.NetWorth).toLocaleString(undefined, {maximumFractionDigits: 0, minimumFractionDigits: 0});
@@ -168,13 +168,12 @@ function populateNetWorthValues(dataObj,$elAsset,$elDebt){
                     $('.networth-header .networth').removeClass('transition');    
                 },1000);
             },120);
-            
+
+        if(dataObj.entryGrey){ 
+          networthHeader.style.opacity = .5;  
         }
         else{
-            //document.getElementById('chart_Asset').hidden = true;  
-            //document.getElementById('chart_Debt').hidden = true;    
-            $(document.getElementById('curve_chart')).hide(); 
-            document.getElementsByClassName('networth-header')[0].style.visibility = 'hidden';
+          networthHeader.style.opacity = 1;   
         }
 
         addValues(dataObj['Asset'],'$','Asset',$elAsset,dataObj.entryGrey);
@@ -189,20 +188,21 @@ function populateNetWorthValues(dataObj,$elAsset,$elDebt){
     }
 }
 
-function drawLineGraph(){
+function drawLineGraph(entryGrey){
        let entryTemp = Object.keys(userData.entries), i, 
        currentString = utility.getReferenceStr(userData.currentMonth,userData.currentYear), 
        entryKeys = [],
        width,
        ratio = 1.8,
        networthMonth;
-       let $el = $(document.getElementById('curve_chart')),
-       dataArr;
 
-       if(!userData.entries[currentString]){  //Stop graph from generating if nothing on current month.
-           $(document.getElementById('curve_chart')).hide(); 
-           return false;
+       if(!userData.entries[currentString]){
+         entryGrey = true;
        }
+
+       let $el = $(document.getElementById('curve_chart')),
+       dataArr,
+       opacity = entryGrey ? .5 : 1;
 
        for(i = 0;i < entryTemp.length;i++){
            entryKeys.push(entryTemp[i]);
@@ -249,7 +249,7 @@ function drawLineGraph(){
         chart = new google.charts.Line(document.getElementById('curve_chart'));
 
         chart.draw(data, options);
-        $el.fadeIn('slow');
+        $el.fadeTo('slow',opacity);
 
 }
 

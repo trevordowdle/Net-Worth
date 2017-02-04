@@ -147,10 +147,9 @@ var utility = function(profile){
                  updateObj[refStr+'/Assets'] = null;		
                  updateObj[refStr+'/Debts'] = null;    		
              }		
-             this.updateNetWorthValues(netWorthData)		
              updateObj[refStr+'/'+entry.type+'/'+entry.name] = entry.value;		
              userDatabase.update(updateObj);		
-             utility.populateValues(true); 		
+             utility.populateValues(true);		
         },
         getDateObject:function(dateString){
             let date, dateObject = {};
@@ -165,23 +164,20 @@ var utility = function(profile){
         },
         populateValues(fromUpdate){		
              let dataObj = this.getDataObj();		
-             if(fromUpdate && $('.side-nav li:nth-child(2) .entry-grey').length){		
-                 drawLineGraph();		
+             if(fromUpdate && $('.side-nav li:nth-child(2) .entry-grey').length){	
+                 this.updateNetWorthValues(dataObj);		
+                 drawLineGraph(true);	
                  return false;		
              }		
              populateNetWorthValues(dataObj,$assetEl,$debtEl);		
         },
         updateNetWorthValues:function(dataObj){
-            let networthHeader = document.getElementsByClassName('networth-header')[0];
-            if(dataObj.Net !== null){
-                networthHeader.getElementsByClassName('networth')[0].getElementsByTagName('span')[0].textContent = '$' + parseFloat(dataObj.Net).toLocaleString(undefined, {maximumFractionDigits: 0, minimumFractionDigits: 0});
-                networthHeader.getElementsByClassName('assets')[0].getElementsByTagName('span')[0].textContent = '$' + parseFloat(dataObj.Assets).toLocaleString(undefined, {maximumFractionDigits: 0, minimumFractionDigits: 0});
-                networthHeader.getElementsByClassName('debts')[0].getElementsByTagName('span')[0].textContent = '$' + parseFloat(dataObj.Debts).toLocaleString(undefined, {maximumFractionDigits: 0, minimumFractionDigits: 0});
-                networthHeader.style.visibility = "";
-            }
-            else{
-                networthHeader.style.visibility = 'hidden';
-            }
+            let networthHeader = document.getElementsByClassName('networth-header')[0],
+            opacity = .5;
+            networthHeader.getElementsByClassName('networth')[0].getElementsByTagName('span')[0].textContent = '$' + parseFloat(dataObj.NetWorth).toLocaleString(undefined, {maximumFractionDigits: 0, minimumFractionDigits: 0});
+            networthHeader.getElementsByClassName('assets')[0].getElementsByTagName('span')[0].textContent = '$' + parseFloat(dataObj.Assets).toLocaleString(undefined, {maximumFractionDigits: 0, minimumFractionDigits: 0});
+            networthHeader.getElementsByClassName('debts')[0].getElementsByTagName('span')[0].textContent = '$' + parseFloat(dataObj.Debts).toLocaleString(undefined, {maximumFractionDigits: 0, minimumFractionDigits: 0});
+            networthHeader.style.opacity = opacity;
         },
         formatEntry(entry){
             let fractionIndicator = 2; 
@@ -215,7 +211,8 @@ var utility = function(profile){
         getDataObj(){
              let refString = this.getReferenceStr(userData.currentMonth,userData.currentYear);
              let dataObj = userData.entries[refString], tempMonth, tempYear;
-             if(!dataObj || !(dataObj.Asset || dataObj.Debt)){
+
+             if(!dataObj || !(dataObj.NetWorth)){
                  tempMonth = userData.currentMonth-1;
                  tempYear = userData.currentYear;
                  if(tempMonth === 0){
