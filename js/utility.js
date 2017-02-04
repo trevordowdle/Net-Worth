@@ -82,7 +82,6 @@ var utility = function(profile){
                    let dataObj = utility.getDataObj();
                    populateNetWorthValues(dataObj,$assetEl,$debtEl);
                }
-
             });
         
         },
@@ -164,7 +163,7 @@ var utility = function(profile){
         },
         populateValues(fromUpdate){		
              let dataObj = this.getDataObj();		
-             if(fromUpdate && $('.side-nav li:nth-child(2) .entry-grey').length){	
+             if(fromUpdate && $('.side-nav li:nth-child(2) .entry-grey').length){	//don't redraw if grey
                  this.updateNetWorthValues(dataObj);		
                  drawLineGraph(true);	
                  return false;		
