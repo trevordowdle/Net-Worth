@@ -370,7 +370,7 @@
       }
 
       var overlayID = _generateID();
-      var $overlay = $('<div class="lean-overlay"></div>');
+      var $overlay = $('<div class="lean-overlay"></div>'),
       lStack = (++_stack);
 
       // Store a reference of the overlay

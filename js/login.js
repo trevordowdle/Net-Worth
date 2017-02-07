@@ -1,7 +1,7 @@
 
-let ui;
-
 function loginModule(sources){ 
+
+  let ui;
 
   console.log('loaded');
   document.body.style.backgroundColor = '#4caf50';

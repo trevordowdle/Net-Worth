@@ -105,7 +105,7 @@ function modalModule(sources,options){
 }
 
 
-toastMap = {
+var toastMap = {
   'Choose Entry Type':'You need to specify whether this entry is an Asset or a Debt.',
   'AssetName':'You must specify a name for your asset.',
   'DebtName':'You must specify a name for your debt.',
@@ -130,7 +130,7 @@ toastMap = {
 
 */
 
-addClick = (ev)=>{
+var addClick = (ev)=>{
       let invalid = false, $modal, $inputs, temp, path, entry = {}, toastString;
       $modal = $(ev.currentTarget.closest('.modal'));
       $inputs = $modal.find('.modal-content input');
@@ -173,7 +173,7 @@ addClick = (ev)=>{
     };
 
 
-updateClick = (ev)=>{
+var updateClick = (ev)=>{
     
     let invalid = false, $modal, $inputs, temp, path, entry = {};
     $modal = $(ev.currentTarget.closest('.modal'));
@@ -194,7 +194,7 @@ updateClick = (ev)=>{
     //Materialize.toast('Update', 4000);
 };
 
-removeClick = (ev)=>{
+var removeClick = (ev)=>{
     let $modal, $inputs, entry = {}, element, edit;
     $modal = $(ev.currentTarget.closest('.modal'));
     $inputs = $modal.find('.modal-content input');
@@ -211,8 +211,8 @@ removeClick = (ev)=>{
     //Materialize.toast('Remove', 4000);
 };
 
-moveEdit = (element)=>{
-    edit = element.getElementsByClassName('edit');
+var moveEdit = (element)=>{
+    let edit = element.getElementsByClassName('edit');
     if(edit.length){
         element.parentElement.parentElement.appendChild(edit[0]);    
     }

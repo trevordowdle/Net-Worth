@@ -93,8 +93,8 @@ var carouselModule;
   }
   
   function getCarouselDate(dateObj,i){
-      month = dateObj.date.getMonth()+1;
-      year = dateObj.date.getFullYear(); 
+      let month = dateObj.date.getMonth()+1;
+      let year = dateObj.date.getFullYear(); 
       return {'year':year,'month':month,'monthString':utility.monthMap[month] + ' ' + year,'color':colorArray[i]};
   }
    
@@ -134,6 +134,7 @@ var carouselModule;
 
         // Options
         if (options.full_width) {
+          let imageHeight;
           options.dist = 0;
           var firstImage = view.find('.carousel-item img').first();
           if (firstImage.length) {
@@ -150,7 +151,7 @@ var carouselModule;
         pressed = false;
         offset = target = 0;
         images = [];
-        item_width = view.find('.carousel-item').first().innerWidth();
+        let item_width = view.find('.carousel-item').first().innerWidth();
         dim = (item_width * 2 + options.padding);
 
         view.find('.carousel-item').each(function (i) {
@@ -197,7 +198,7 @@ var carouselModule;
         }
 
         function scroll(x,final) {
-          var i, half, delta, dir, tween, el, alignment, xTranslation;
+          var i, half, delta, dir, tween, el, alignment, xTranslation, tweenedOpacity, zTranslation;
 
           offset = (typeof x === 'number') ? x : offset;
           center = Math.floor((offset + dim / 2) / dim);
@@ -396,7 +397,7 @@ var carouselModule;
         }
 
         function drag(e) {
-          var x, delta, deltaY;
+          var x, y, delta, deltaY;
           if (pressed) {
             x = xpos(e);
             y = ypos(e);

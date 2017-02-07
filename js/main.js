@@ -24,7 +24,7 @@ const drivers = {
 
 //firebase.auth().signOut();
 
-initApp = function() {
+var initApp = function() {
 
     var userLookup, index;
     index = location.href.indexOf('user=');

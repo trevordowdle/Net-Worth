@@ -59,7 +59,7 @@ function sideNavModule(sources){
     
   let getClicks$ = getClickSideBar$.merge(getClickAdd$).merge(getClickEdit$);
     
-  watchSidebar$ = sources.DOM.select('.side-nav li .collapsible')
+  let watchSidebar$ = sources.DOM.select('.side-nav li .collapsible')
                        .observable
                        .subscribe((el)=>{
                             //$(el).append(temp);
@@ -69,7 +69,7 @@ function sideNavModule(sources){
                             }   
                         });
 
- watchToggleNav$ = sources.DOM.select('.button-collapse')
+ let watchToggleNav$ = sources.DOM.select('.button-collapse')
     .observable
     .subscribe((el)=>{
         //$(el).append(temp);
@@ -79,7 +79,7 @@ function sideNavModule(sources){
         }   
     });
 
-  clickProfile$ = sources.DOM.select('#profile')
+  let clickProfile$ = sources.DOM.select('#profile')
                   .events('click')
                   .subscribe((ev)=>{
                       location.href = "profile";
@@ -225,7 +225,7 @@ function drawLineGraph(entryGrey){
            return prev;
        },[['Month','Net Worth']]);
         
-        data = google.visualization.arrayToDataTable(dataArr);
+        let data = google.visualization.arrayToDataTable(dataArr);
 
         width = $el.parent().width()-10;
 
@@ -238,7 +238,7 @@ function drawLineGraph(entryGrey){
             ratio = .9;
         }
 
-        options = {
+        let options = {
         chart: {
           title: 'Net worth as of '+networthMonth,
           subtitle: 'keep progressing!'
@@ -246,7 +246,7 @@ function drawLineGraph(entryGrey){
         width: width,
         height: width/ratio
       };
-        chart = new google.charts.Line(document.getElementById('curve_chart'));
+        let chart = new google.charts.Line(document.getElementById('curve_chart'));
 
         chart.draw(data, options);
         $el.fadeTo('slow',opacity);
