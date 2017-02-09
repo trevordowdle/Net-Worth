@@ -11,10 +11,20 @@ gulp.task('default', function() {
         .pipe(gp_jsonlint.reporter())*/
         .pipe(gp_babel({presets: ['es2015']}))
         .pipe(gp_concat('concat.js'))
-        .pipe(gulp.dest('docs'))
+        .pipe(gulp.dest('src'))
         .pipe(gp_rename('uglify.js'))
         .pipe(gp_uglify().on('error', function(e){
             console.log(e);
          }))
         .pipe(gulp.dest('src'));    
+
+  gulp.src(['js/utility.js','profile/js/main.js'])
+      .pipe(gp_babel({presets: ['es2015']}))
+        .pipe(gp_concat('concatProfile.js'))
+        .pipe(gulp.dest('src'))
+        .pipe(gp_rename('uglifyProfile.js'))
+        .pipe(gp_uglify().on('error', function(e){
+            console.log(e);
+         }))
+        .pipe(gulp.dest('src'));
 });

@@ -109,13 +109,13 @@ function headerModule(sources){
         console.log('blur');
     });
 
-    getClick$ = sources.DOM.select('.arrow.left').events('click').subscribe(function(){
+    sources.DOM.select('.arrow.left').events('click').subscribe(function(){
         userData.lookup -= 1;
         userData.monthString = utility.getMonthString();
         populateNetWorthGraph(userData.entries[userData.keys[userData.lookup]]);
     });
 
-    getClick$ = sources.DOM.select('.arrow.right').events('click').subscribe(function(){
+    sources.DOM.select('.arrow.right').events('click').subscribe(function(){
         userData.lookup += 1;
         userData.monthString = utility.getMonthString();
         populateNetWorthGraph(userData.entries[userData.keys[userData.lookup]]);
@@ -177,12 +177,12 @@ function headerModule(sources){
                 ]),
                 br(),
                 div('.col .offset-s1 .s5 .offset-m1 .m5 .offset-l2 .l4',{style:{'padding-left':'20px'}},[
-                    div('.card-panel',[
+                    div('.card-panel',{style:{opacity:'0'}},[
                         div('#pie_chart1')
                     ])
                 ]),
                 div('.col .s5 .m5 .l4',[
-                    div('.card-panel',[
+                    div('.card-panel',{style:{opacity:'0'}},[
                         div('#pie_chart2')
                     ])
                 ])
@@ -215,7 +215,7 @@ function mainModule(sources){
 
 //firebase.auth().signOut();
 
-initApp = function() {
+let initApp = function() {
 
     var userLookup, index, doc = document;
     index = location.href.indexOf('user=');
@@ -297,7 +297,7 @@ function drawLineGraph(){
            return prev;
        },[['Month','Net Worth']]);
         
-        data = google.visualization.arrayToDataTable(dataArr);
+        let data = google.visualization.arrayToDataTable(dataArr);
 
         width = $el.parent().width()-5;
 
@@ -310,7 +310,7 @@ function drawLineGraph(){
             ratio = 1.2;
         }
 
-        options = {
+        let options = {
         chart: {
           title: 'Net worth as of '+networthMonth,
           subtitle: ''
@@ -318,9 +318,10 @@ function drawLineGraph(){
         width: width,
         height: width/ratio
       };
-        chart = new google.charts.Line($el[0]);
+        let chart = new google.charts.Line($el[0]);
 
         chart.draw(data, options);
+
         $el.fadeIn('slow');
 
 }
@@ -362,7 +363,7 @@ function drawPieGraphs(obj,type){
     if(rows.length){
         data.addRows(rows); 
         // Instantiate and draw our chart, passing in some options.
-        chart = new google.visualization.PieChart(el);
+        let chart = new google.visualization.PieChart(el);
         el.hidden = false;
         chart.draw(data, options);
     }
@@ -390,7 +391,7 @@ function drawPieGraphs(obj,type){
         options.title = 'Debt Allocation';
 
         // Instantiate and draw our chart, passing in some options.
-        chart = new google.visualization.PieChart(el2);
+        let chart = new google.visualization.PieChart(el2);
         el2.hidden = false;
         chart.draw(data, options);
     }
@@ -407,10 +408,10 @@ function populateNetWorthGraph(dataObj){
                 networthHeader.getElementsByClassName('networth')[0].getElementsByTagName('span')[0].textContent = '$' + parseFloat(dataObj.NetWorth).toLocaleString(undefined, {maximumFractionDigits: 0, minimumFractionDigits: 0});
                 networthHeader.getElementsByClassName('assets')[0].getElementsByTagName('span')[0].textContent = '$' + parseFloat(dataObj.Assets).toLocaleString(undefined, {maximumFractionDigits: 0, minimumFractionDigits: 0});
                 networthHeader.getElementsByClassName('debts')[0].getElementsByTagName('span')[0].textContent = '$' + parseFloat(dataObj.Debts).toLocaleString(undefined, {maximumFractionDigits: 0, minimumFractionDigits: 0});
-                $('.card-panel').css('opacity',1);
                 networthHeader.style.visibility = "";
                 drawLineGraph();
                 drawPieGraphs();
+                $('.card-panel').css('opacity',1);
             }        
 
 }
