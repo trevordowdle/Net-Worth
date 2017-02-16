@@ -232,11 +232,9 @@ let initApp = function() {
             }
         }
         else if (user) {
-            location.href += '?user='+user.uid;
-            userData.accountName = user.displayName;
-            userData.accountURL = user.photoURL || 'img/anony.jpg';
             utility.setDatabase(user.uid);
             Cycle.run(page, drivers);
+            history.replaceState('', 'Net Worth Profile', location.href + '?user='+user.uid);
         } else {
             location.href = "/Net-Worth";    
         }
