@@ -559,7 +559,7 @@ function loginModule(sources) {
 
     var vtree$ = Rx.Observable.of(div('.login-outer', [div('.login-middle', [div('.login-inner .z-depth-4', [br(), span('#logo2 .noselect', [
     /*img({src:'https://material.google.com/static/images/nav_google_logo.svg'}),*/
-    img({ src: 'img/logo.png', style: { 'width': '100px' } })]), p('Track your Net Worth'), br(), div('#firebaseui-auth-container'), div({ style: { 'padding': '10px' } }, [a({ 'href': 'terms.html', 'target': '_blank', style: { 'color': 'grey' } }, [span('Terms Of Service')])])])])]));
+    img({ src: 'img/logo2.png', style: { 'width': '140px' } })]), p('Track your Net Worth'), br(), div('#firebaseui-auth-container'), div({ style: { 'padding': '10px' } }, [a({ 'href': 'terms.html', 'target': '_blank', style: { 'color': 'grey' } }, [span('Terms Of Service')])])])])]));
 
     return {
         DOM: vtree$
@@ -4043,7 +4043,7 @@ function sideNavModule(sources) {
     vtree$ = getClicks$.map(function () {
         return div([ul('.side-nav .fixed #nav-mobile', [li('.side-nav-top', [span('#profile', [img({ src: userData.accountURL, style: { width: '35px', 'border-radius': '50%' } })]), span('#logo .noselect', [
         /*img({src:'https://material.google.com/static/images/nav_google_logo.svg'}),*/
-        img({ src: 'img/logo.png', style: { 'width': '100px' } })]), a('.add .btn-floating .btn-large .waves-effect .waves-light .green', [i('.material-icons', 'add')])]), li('.no-padding', [ul('#sideNav .collapsible .collapsible-accordion', [li('.bold', [a('.collapsible-header .waves-effect .waves-teal .asset', 'Assets'), div('.collapsible-body', [ul([li('.asset-items')])])]), li('.bold', [a('.collapsible-header .waves-effect .waves-teal .debt', 'Debts'), div('.collapsible-body', [ul([li('.debt-items')])])])])])]), a('.button-collapse', { attributes: { 'data-activates': 'nav-mobile' }, style: { position: 'absolute', top: '5px', left: '5px', color: 'white', cursor: 'pointer' } }, [i('.material-icons', 'menu')]), i('.material-icons .edit .hide', 'mode_edit') // to do give this background and waves
+        img({ src: 'img/logo2.png', style: { 'width': '140px' } })]), a('.add .btn-floating .btn-large .waves-effect .waves-light .green', [i('.material-icons', 'add')])]), li('.no-padding', [ul('#sideNav .collapsible .collapsible-accordion', [li('.bold', [a('.collapsible-header .waves-effect .waves-teal .asset', 'Assets'), div('.collapsible-body', [ul([li('.asset-items')])])]), li('.bold', [a('.collapsible-header .waves-effect .waves-teal .debt', 'Debts'), div('.collapsible-body', [ul([li('.debt-items')])])])])])]), a('.button-collapse', { attributes: { 'data-activates': 'nav-mobile' }, style: { position: 'absolute', top: '5px', left: '5px', color: 'white', cursor: 'pointer' } }, [i('.material-icons', 'menu')]), i('.material-icons .edit .hide', 'mode_edit') // to do give this background and waves
         ]);
     });
 

@@ -49,7 +49,7 @@ function loginModule(sources){
                             br(),
                             span('#logo2 .noselect',[
                                 /*img({src:'https://material.google.com/static/images/nav_google_logo.svg'}),*/
-                                img({src:'img/logo.png',style:{'width':'100px'}})
+                                img({src:'img/logo2.png',style:{'width':'140px'}})
                             ]),
                             p('Track your Net Worth'),
                             br(),

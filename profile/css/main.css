@@ -181,3 +181,54 @@ button.arrow.right:active i:first-child {
 button.arrow.right:active i:last-child {
   transform: translate(1px, -1px) rotate(-25deg);
 }
+
+.changeGraph {
+  text-align:center;
+  margin-bottom:-10px;
+}
+
+.changeGraph button {
+    background-color:white;
+    height: 20px;
+    font-size: 12px;
+    color:#b3b3b3 !important;
+    border: none;
+    border-radius: 2px;
+    display: inline-block;
+    height: 36px;
+    line-height: 36px;
+    padding: 0 2rem;
+    text-transform: uppercase;
+    vertical-align: middle;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.changeGraph button.active {
+    position:relative;
+    border:1px solid rgba(128, 128, 128, 0.20);
+    border-bottom: none;
+    box-shadow: 0 2px 5px 0 rgba(0,0,0,0.16), 0 2px 10px 0 rgba(0,0,0,0.12);
+}
+
+.coverDiv {
+  z-index: 9999;
+  background-color: white;
+  height: 20px;
+  position: absolute;
+}
+
+
+/*
+
+<div style="
+    z-index: 9999;
+    top: 320px;
+    background-color: white;
+    left: 353px;
+    width: 134px;
+    height: 20px;
+    position: absolute;
+"></div>
+
+*/
+    

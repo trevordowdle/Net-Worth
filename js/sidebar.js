@@ -94,7 +94,7 @@ function sideNavModule(sources){
                         ]),
                         span('#logo .noselect',[
                             /*img({src:'https://material.google.com/static/images/nav_google_logo.svg'}),*/
-                            img({src:'img/logo.png',style:{'width':'100px'}})
+                            img({src:'img/logo2.png',style:{'width':'140px'}})
                         ]),
                         a('.add .btn-floating .btn-large .waves-effect .waves-light .green',[
                             i('.material-icons','add')    

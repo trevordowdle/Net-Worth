@@ -36,6 +36,19 @@ function headerModule(sources){
             }   
         });
 
+    let watchChangeGraph$ = sources.DOM.select('.changeGraph')
+        .observable
+        .subscribe((el)=>{
+            if(el.length){
+                var coverDiv = el[0].getElementsByClassName('coverDiv')[0],
+                cardPanel = el[0].nextElementSibling.getElementsByClassName('card-panel')[0];
+                coverDiv.style.top = cardPanel.offsetTop + "px";
+                coverDiv.style.left = cardPanel.offsetLeft + 10 + "px";
+                coverDiv.style.width = cardPanel.offsetWidth - 20 + "px";
+                watchChangeGraph$.dispose();
+            }      
+        });
+
     let editMouseClick$ = sources.DOM.select('.nav .nav-wrapper .name .edit').events('click').subscribe(function(ev){
         var parent = $(ev.currentTarget.parentElement.parentElement);
         parent.find('.name').hide();
@@ -65,7 +78,6 @@ function headerModule(sources){
     let networthClick$ = sources.DOM.select('.brand-logo').events('click').subscribe(function(ev){
         location.href = "/Net-Worth";
     });
-
 
     sources.DOM.select('.logout').events('click').subscribe(function(ev){
         firebase.auth().signOut();
@@ -109,6 +121,12 @@ function headerModule(sources){
         console.log('blur');
     });
 
+    sources.DOM.select('.changeGraph button').events('click').subscribe(function(e){
+        var $target = $(e.target);
+        $target.addClass('active').siblings().removeClass('active');
+        populateNetWorthGraph(userData.entries[userData.keys[userData.lookup]]);
+    });
+
     sources.DOM.select('.arrow.left').events('click').subscribe(function(){
         userData.lookup -= 1;
         userData.monthString = utility.getMonthString();
@@ -128,7 +146,7 @@ function headerModule(sources){
                     div('.logout',{style:{padding:'5px',color:'#cecece',cursor:'pointer'}},[
                         span('Sign Out')
                     ]),
-                    a('.brand-logo .center','NetWorth'),
+                    a('.brand-logo .center','Worth Watchers'),
                     img('.profileImg .center'),
                     label('.name .center'/*,{style:{display:'none'}}*/),
                     div('.input-field .col',{style:{'display':'none','width':'150px','margin-left':'50%','position':'absolute','transform':'translateX(-50%)','top':'152px'}},[
@@ -170,26 +188,33 @@ function headerModule(sources){
             ]),
             br(),
             div('.row',[
+                div('.col .s12 .m12 .l12 .changeGraph',{style:{opacity:'0'}},[
+                    button('.netWorthGraph .active .drawn','Net Worth'),
+                    button('.assetsGraph','Assets'),
+                    button('.debtsGraph','Debts'),
+                    div('.coverDiv')
+                ]),
                 div('.col .s12 .offset-m1 .m10 .offset-l2 .l8',{style:{'padding-left':'20px'}},[
                     div('.card-panel',{style:{opacity:'0'}},[
-                        div('#curve_chart')
+                        div('#curve_chart'),
+                        div('#curve_chart_assets'),
+                        div('#curve_chart_debts')
                     ])
                 ]),
                 br(),
-                div('.col .offset-s1 .s5 .offset-m1 .m5 .offset-l2 .l4',{style:{'padding-left':'20px'}},[
+                div('.col .s6 .offset-m1 .m5 .offset-l2 .l4',{style:{'padding-left':'20px'}},[
                     div('.card-panel',{style:{opacity:'0'}},[
                         div('#pie_chart1')
                     ])
                 ]),
-                div('.col .s5 .m5 .l4',[
+                div('.col .s6 .m5 .l4',[
                     div('.card-panel',{style:{opacity:'0'}},[
                         div('#pie_chart2')
                     ])
                 ])
             ]),
             br(),
-            br(),
-
+            br()
         ])
     );
   
@@ -251,21 +276,26 @@ window.addEventListener('load', function() {
 function updateView(){
     $('.arrow').css('display','inline-block');
     $('#curve_chart').parent().show();
+    $('.changeGraph').show();
     if(userData.lookup === userData.keys.length-1){
         $('.arrow.right').hide();
     }
     if(userData.lookup === 0){
         $('.arrow.left').hide();
         $('#curve_chart').parent().hide();
+        $('.changeGraph').hide();
     }
 }
 
-function drawLineGraph(){
+function drawLineGraph(ind, passedInTitle){
        let i, 
+       indicator = ind || '',
+       title = passedInTitle || "Net Worth",
+       dataMap = passedInTitle || "NetWorth",
        currentString = userData.keys[userData.lookup], 
        entryKeys = [],
        networthMonth, temp;
-       let $el = $(document.getElementById('curve_chart')),
+       let $el = $(document.getElementById('curve_chart'+indicator)),
        dataArr, width, ratio = 2.2;
 
        for(i = 0;i < userData.keys.length;i++){
@@ -291,9 +321,9 @@ function drawLineGraph(){
            month = utility.monthMap[parseInt(keyString.substring(4))],
            year = keyString.substring(0,4);
            networthMonth = month + " " + year;
-           prev.push([networthMonth,parseFloat(userData.entries[key].NetWorth)]);
+           prev.push([networthMonth,parseFloat(userData.entries[key][dataMap])]);
            return prev;
-       },[['Month','Net Worth']]);
+       },[['Month',title]]);
         
         let data = google.visualization.arrayToDataTable(dataArr);
 
@@ -310,7 +340,7 @@ function drawLineGraph(){
 
         let options = {
         chart: {
-          title: 'Net worth as of '+networthMonth,
+          title: title + ' as of '+networthMonth,
           subtitle: ''
         },
         width: width,
@@ -320,7 +350,7 @@ function drawLineGraph(){
 
         chart.draw(data, options);
 
-        $el.fadeIn('slow');
+        $el.fadeIn('slow').siblings().hide();
 
 }
 
@@ -397,7 +427,7 @@ function drawPieGraphs(obj,type){
 }
 
 function populateNetWorthGraph(dataObj){
-    let networthHeader;
+    let networthHeader, indicator = "", title = "", activeTab;
 
             if(dataObj){
                 updateView();
@@ -407,9 +437,20 @@ function populateNetWorthGraph(dataObj){
                 networthHeader.getElementsByClassName('assets')[0].getElementsByTagName('span')[0].textContent = '$' + parseFloat(dataObj.Assets).toLocaleString(undefined, {maximumFractionDigits: 0, minimumFractionDigits: 0});
                 networthHeader.getElementsByClassName('debts')[0].getElementsByTagName('span')[0].textContent = '$' + parseFloat(dataObj.Debts).toLocaleString(undefined, {maximumFractionDigits: 0, minimumFractionDigits: 0});
                 networthHeader.style.visibility = "";
-                drawLineGraph();
+
+                activeTab = $('.changeGraph .active');
+                if(activeTab.text() === "Assets"){
+                    indicator = "_assets";
+                    title = "Assets";
+                }
+                if(activeTab.text() === "Debts"){
+                    indicator = "_debts";
+                    title = "Debts";
+                }
+
+                drawLineGraph(indicator,title);
                 drawPieGraphs();
-                $('.card-panel').css('opacity',1);
+                $('.card-panel, .changeGraph').css('opacity',1);
             }        
 
 }
