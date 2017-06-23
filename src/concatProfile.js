@@ -215,6 +215,8 @@ var utility = function (profile) {
             var dataObj = userData.entries[refString],
                 tempMonth = void 0,
                 tempYear = void 0;
+            var entryKeys = void 0,
+                entryIndex = void 0;
 
             if (!dataObj || !dataObj.NetWorth) {
                 tempMonth = userData.currentMonth - 1;
@@ -232,7 +234,64 @@ var utility = function (profile) {
                 dataObj.entryGrey = false;
             }
 
+            entryKeys = Object.keys(userData.entries);
+            entryIndex = entryKeys.indexOf(refString);
+            if (entryIndex >= 6) {
+                //calculate 6 mo average
+                this.calculateNetworthAvg(entryKeys.slice(entryIndex - 6, entryIndex + 1), dataObj);
+            } else if (entryIndex >= 3) {
+                //calculate 3 mo average
+                this.calculateNetworthAvg(entryKeys.slice(entryIndex - 3, entryIndex + 1), dataObj);
+            } else if (entryIndex >= 1) {
+                this.calculateNetworthAvg(entryKeys.slice(entryIndex - 1, entryIndex + 1), dataObj);
+            }
+
             return dataObj;
+        },
+        calculateNetworthAvg: function calculateNetworthAvg(entries, dataObj) {
+            var _this = this;
+
+            var sum = 0,
+                threeMo = void 0,
+                sixMo = void 0,
+                oneMo = void 0,
+                fractionIndicator = void 0;
+            entries.reverse().map(function (entry, index) {
+                var entryData = userData.entries[entry];
+                if (index + 1 < entries.length) {
+                    /*                    if(index === 0){ // Calculate difference 1 month running
+                                            Object.keys(entryData.Asset).map((key)=>{
+                                                console.log(key,entryData.Asset[key]-userData.entries[entries[index+1]].Asset[key]);
+                                            });
+                                            Object.keys(entryData.Debt).map((key)=>{
+                                                console.log(key,entryData.Debt[key]-userData.entries[entries[index+1]].Debt[key]);
+                                            });
+                                        }*/
+                    sum += entryData.NetWorth - userData.entries[entries[index + 1]].NetWorth;
+                }
+                if (index === 0) {
+                    oneMo = sum;
+                    fractionIndicator = _this.getFractionIndicator(oneMo);
+                    oneMo = oneMo.toLocaleString(undefined, { maximumFractionDigits: fractionIndicator, minimumFractionDigits: fractionIndicator });
+                }
+                if (index === 2) {
+                    threeMo = sum / 3;
+                    fractionIndicator = _this.getFractionIndicator(threeMo);
+                    threeMo = threeMo.toLocaleString(undefined, { maximumFractionDigits: fractionIndicator, minimumFractionDigits: fractionIndicator });
+                }
+                if (index === 5) {
+                    sixMo = sum / 6;
+                    fractionIndicator = _this.getFractionIndicator(sixMo);
+                    sixMo = sixMo.toLocaleString(undefined, { maximumFractionDigits: fractionIndicator, minimumFractionDigits: fractionIndicator });
+                }
+            });
+            dataObj.oneMo = oneMo;
+            dataObj.threeMo = threeMo;
+            dataObj.sixMo = sixMo;
+            //userData
+        },
+        getFractionIndicator: function getFractionIndicator(num) {
+            return num % 1 === 0 ? 0 : 2;
         },
         getDataObjProfile: function getDataObjProfile() {
             var refString = this.getReferenceStr(userData.currentMonth, userData.currentYear),

@@ -687,12 +687,7 @@ function mainModule(sources) {
         firebase.auth().signOut();
     });
 
-    vtree$ = Rx.Observable.of(main([div([div('.row', [br(), div('.col .s12 .m12 .l6', [div([div('#chart_Asset')])]), div('.col .s12 .m12 .l6', [div([div('#chart_Debt')])]), div('.row .networth-header', { style: { visibility: 'hidden' } }, [div('.col .s4 .m4 .l4 .assets', [label('Assets: '), span('.green-text', '')]), div('.col .s4 .m4 .l4 .debts', [label('Debts: '), span('.red-text', '')]), div('.col .s4 .m4 .l4 .networth', [label('Net Worth: '), span('.green-text .text-darken-3', '')])]), div('.col .s12 .m12 .l12', [div('#curve_chart')]), div('.col .s12 .m12 .l12', [br(),
-    /*
-    p('Beta Application'),
-    button('.logout','logout'),
-    */
-    br()])])])]));
+    vtree$ = Rx.Observable.of(main([div([div('.row', [br(), div('.col .s12 .m12 .l6', [div([div('#chart_Asset')])]), div('.col .s12 .m12 .l6', [div([div('#chart_Debt')])]), div('.row .networth-header', { style: { visibility: 'hidden' } }, [div('.col .s4 .m4 .l4 .assets', [label('Assets: '), span('.green-text', '')]), div('.col .s4 .m4 .l4 .debts', [label('Debts: '), span('.red-text', '')]), div('.col .s4 .m4 .l4 .networth', [label('Net Worth: '), span('.green-text .text-darken-3', '')])]), div('.col .s12 .m12 .l12', [div('#curve_chart')]), div('.row .networth-info', { style: { visibility: 'hidden' } }, [div('.col .s4 .m4 .l4 .one-month', [br(), label('1 mo change:'), span({ style: { 'font-size': '12px' } }), br()]), div('.col .s4 .m4 .l4 .three-month', [br(), label('3 mo net avg:'), span({ style: { 'font-size': '12px' } }), br()]), div('.col .s4 .m4 .l4 .six-month', [br(), label('6 mo net avg:'), span({ style: { 'font-size': '12px' } }), br()])])])])]));
 
     return {
         DOM: vtree$
@@ -4065,16 +4060,15 @@ function accordionToggle(object) {
 }
 
 function populateNetWorthValues(dataObj, $elAsset, $elDebt) {
-    var networthHeader = void 0;
+    var networthHeader = void 0,
+        networthInfo = void 0;
     moveEdit($elAsset.closest('.collapsible-accordion')[0]);
     $elAsset.empty();
     $elDebt.empty();
+    networthInfo = document.getElementsByClassName('networth-info')[0];
+    networthInfo.style.visibility = "hidden";
     if (dataObj) {
-        //Somewhere in here we can initiate the graphs but need to create a uncoupled function so I can use it for updates as well
-
-        //drawGraph(dataObj['Asset'],'Asset');
-        //drawGraph(dataObj['Debt'],'Debt');
-        //debugger;
+        var _span = void 0;
         drawLineGraph(dataObj.entryGrey);
         //document.getElementBy
         networthHeader = document.getElementsByClassName('networth-header')[0];
@@ -4082,6 +4076,12 @@ function populateNetWorthValues(dataObj, $elAsset, $elDebt) {
         networthHeader.getElementsByClassName('assets')[0].getElementsByTagName('span')[0].textContent = '$' + parseFloat(dataObj.Assets).toLocaleString(undefined, { maximumFractionDigits: 0, minimumFractionDigits: 0 });
         networthHeader.getElementsByClassName('debts')[0].getElementsByTagName('span')[0].textContent = '$' + parseFloat(dataObj.Debts).toLocaleString(undefined, { maximumFractionDigits: 0, minimumFractionDigits: 0 });
         networthHeader.style.visibility = "";
+
+        if (handleNetworthAvgDisplay(networthInfo, dataObj.oneMo, 'one-month')) {
+            networthInfo.style.visibility = "";
+        }
+        handleNetworthAvgDisplay(networthInfo, dataObj.threeMo, 'three-month');
+        handleNetworthAvgDisplay(networthInfo, dataObj.sixMo, 'six-month');
 
         setTimeout(function () {
             $('.networth-header .networth').addClass('transition');
@@ -4105,6 +4105,24 @@ function populateNetWorthValues(dataObj, $elAsset, $elDebt) {
         $(document.getElementById('curve_chart')).hide();
         document.getElementsByClassName('networth-header')[0].style.visibility = 'hidden';
     }
+}
+
+function handleNetworthAvgDisplay(networthInfo, value, keyClass) {
+    var span = void 0;
+
+    span = networthInfo.getElementsByClassName(keyClass)[0].getElementsByTagName('span')[0];
+    if (value) {
+        span.textContent = ' $' + value;
+        if (parseInt(value) > 0) {
+            span.className = "green-text";
+        } else {
+            span.className = "red-text";
+        }
+        span.parentElement.style.visibility = "";
+        return true;
+    }
+
+    span.parentElement.style.visibility = "hidden";
 }
 
 function drawLineGraph(entryGrey) {
@@ -4423,6 +4441,8 @@ var utility = function (profile) {
             var dataObj = userData.entries[refString],
                 tempMonth = void 0,
                 tempYear = void 0;
+            var entryKeys = void 0,
+                entryIndex = void 0;
 
             if (!dataObj || !dataObj.NetWorth) {
                 tempMonth = userData.currentMonth - 1;
@@ -4440,7 +4460,64 @@ var utility = function (profile) {
                 dataObj.entryGrey = false;
             }
 
+            entryKeys = Object.keys(userData.entries);
+            entryIndex = entryKeys.indexOf(refString);
+            if (entryIndex >= 6) {
+                //calculate 6 mo average
+                this.calculateNetworthAvg(entryKeys.slice(entryIndex - 6, entryIndex + 1), dataObj);
+            } else if (entryIndex >= 3) {
+                //calculate 3 mo average
+                this.calculateNetworthAvg(entryKeys.slice(entryIndex - 3, entryIndex + 1), dataObj);
+            } else if (entryIndex >= 1) {
+                this.calculateNetworthAvg(entryKeys.slice(entryIndex - 1, entryIndex + 1), dataObj);
+            }
+
             return dataObj;
+        },
+        calculateNetworthAvg: function calculateNetworthAvg(entries, dataObj) {
+            var _this = this;
+
+            var sum = 0,
+                threeMo = void 0,
+                sixMo = void 0,
+                oneMo = void 0,
+                fractionIndicator = void 0;
+            entries.reverse().map(function (entry, index) {
+                var entryData = userData.entries[entry];
+                if (index + 1 < entries.length) {
+                    /*                    if(index === 0){ // Calculate difference 1 month running
+                                            Object.keys(entryData.Asset).map((key)=>{
+                                                console.log(key,entryData.Asset[key]-userData.entries[entries[index+1]].Asset[key]);
+                                            });
+                                            Object.keys(entryData.Debt).map((key)=>{
+                                                console.log(key,entryData.Debt[key]-userData.entries[entries[index+1]].Debt[key]);
+                                            });
+                                        }*/
+                    sum += entryData.NetWorth - userData.entries[entries[index + 1]].NetWorth;
+                }
+                if (index === 0) {
+                    oneMo = sum;
+                    fractionIndicator = _this.getFractionIndicator(oneMo);
+                    oneMo = oneMo.toLocaleString(undefined, { maximumFractionDigits: fractionIndicator, minimumFractionDigits: fractionIndicator });
+                }
+                if (index === 2) {
+                    threeMo = sum / 3;
+                    fractionIndicator = _this.getFractionIndicator(threeMo);
+                    threeMo = threeMo.toLocaleString(undefined, { maximumFractionDigits: fractionIndicator, minimumFractionDigits: fractionIndicator });
+                }
+                if (index === 5) {
+                    sixMo = sum / 6;
+                    fractionIndicator = _this.getFractionIndicator(sixMo);
+                    sixMo = sixMo.toLocaleString(undefined, { maximumFractionDigits: fractionIndicator, minimumFractionDigits: fractionIndicator });
+                }
+            });
+            dataObj.oneMo = oneMo;
+            dataObj.threeMo = threeMo;
+            dataObj.sixMo = sixMo;
+            //userData
+        },
+        getFractionIndicator: function getFractionIndicator(num) {
+            return num % 1 === 0 ? 0 : 2;
         },
         getDataObjProfile: function getDataObjProfile() {
             var refString = this.getReferenceStr(userData.currentMonth, userData.currentYear),

@@ -144,16 +144,14 @@ function accordionToggle(object) {
 }
 
 function populateNetWorthValues(dataObj,$elAsset,$elDebt){
-    let networthHeader;
+    let networthHeader, networthInfo;
     moveEdit($elAsset.closest('.collapsible-accordion')[0]);
     $elAsset.empty();
     $elDebt.empty();
+    networthInfo = document.getElementsByClassName('networth-info')[0];
+    networthInfo.style.visibility = "hidden";
     if(dataObj){
-        //Somewhere in here we can initiate the graphs but need to create a uncoupled function so I can use it for updates as well
-
-            //drawGraph(dataObj['Asset'],'Asset');
-            //drawGraph(dataObj['Debt'],'Debt');
-            //debugger;
+            let span;
             drawLineGraph(dataObj.entryGrey);
             //document.getElementBy
             networthHeader = document.getElementsByClassName('networth-header')[0];
@@ -161,6 +159,12 @@ function populateNetWorthValues(dataObj,$elAsset,$elDebt){
             networthHeader.getElementsByClassName('assets')[0].getElementsByTagName('span')[0].textContent = '$' + parseFloat(dataObj.Assets).toLocaleString(undefined, {maximumFractionDigits: 0, minimumFractionDigits: 0});
             networthHeader.getElementsByClassName('debts')[0].getElementsByTagName('span')[0].textContent = '$' + parseFloat(dataObj.Debts).toLocaleString(undefined, {maximumFractionDigits: 0, minimumFractionDigits: 0});
             networthHeader.style.visibility = "";
+
+            if(handleNetworthAvgDisplay(networthInfo,dataObj.oneMo,'one-month')){
+                networthInfo.style.visibility = "";
+            }
+            handleNetworthAvgDisplay(networthInfo,dataObj.threeMo,'three-month');
+            handleNetworthAvgDisplay(networthInfo,dataObj.sixMo,'six-month');
 
             setTimeout(function(){
                 $('.networth-header .networth').addClass('transition');
@@ -186,6 +190,26 @@ function populateNetWorthValues(dataObj,$elAsset,$elDebt){
         $(document.getElementById('curve_chart')).hide(); 
         document.getElementsByClassName('networth-header')[0].style.visibility = 'hidden';     
     }
+}
+
+function handleNetworthAvgDisplay(networthInfo,value,keyClass){
+    let span;
+
+    span = networthInfo.getElementsByClassName(keyClass)[0].getElementsByTagName('span')[0];
+    if(value){
+        span.textContent = ' $' + value;
+        if(parseInt(value) > 0){
+            span.className = "green-text";
+        }
+        else {
+            span.className = "red-text";
+        }
+        span.parentElement.style.visibility = "";
+        return true;
+    }
+
+    span.parentElement.style.visibility = "hidden";
+
 }
 
 function drawLineGraph(entryGrey){
