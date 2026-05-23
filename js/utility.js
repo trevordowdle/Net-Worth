@@ -115,6 +115,7 @@ var utility = function(profile){
             
                if(!firstSnapshot){
                    firstSnapshot = true;
+                   userData.profileTagFilter = [];
                    userData.displayName = data.displayName;
                    userData.photoURL = data.photoURL;
                    userData.keys = Object.keys(userData.entries);
@@ -450,6 +451,129 @@ var utility = function(profile){
                 dataObj = userData.entries[refString];
             }
             return dataObj;
+        },
+        getProfileTagFilter:function(){
+            return userData.profileTagFilter || [];
+        },
+        setProfileTagFilter:function(tags){
+            userData.profileTagFilter = this.normalizeTags(tags);
+        },
+        getAllTags:function(){
+            var tagMap = {}, sorted = [], keys, i, month, types, ti, type, names, ni, name, list, li;
+            keys = Object.keys(userData.entries || {});
+            types = ['Asset', 'Debt'];
+            for(i = 0; i < keys.length; i++){
+                month = userData.entries[keys[i]];
+                if(!month || !month.tags){
+                    continue;
+                }
+                for(ti = 0; ti < types.length; ti++){
+                    type = types[ti];
+                    if(!month.tags[type]){
+                        continue;
+                    }
+                    names = Object.keys(month.tags[type]);
+                    for(ni = 0; ni < names.length; ni++){
+                        list = month.tags[type][names[ni]];
+                        if(!Array.isArray(list)){
+                            continue;
+                        }
+                        for(li = 0; li < list.length; li++){
+                            tagMap[list[li]] = true;
+                        }
+                    }
+                }
+            }
+            sorted = Object.keys(tagMap);
+            sorted.sort();
+            return sorted;
+        },
+        entryMatchesTags:function(monthRef, type, name, filterTags){
+            var entryTags, i;
+            if(!filterTags || !filterTags.length){
+                return true;
+            }
+            entryTags = this.getTagsForEntry(monthRef, type, name);
+            for(i = 0; i < filterTags.length; i++){
+                if(entryTags.indexOf(filterTags[i]) < 0){
+                    return false;
+                }
+            }
+            return true;
+        },
+        sumTaggedEntries:function(monthRef, filterTags){
+            var month = userData.entries[monthRef], types = ['Asset', 'Debt'], assets = 0, debts = 0,
+                matches = [], ti, type, keys, ki, name, val, nw;
+            if(!month){
+                return {assets: 0, debts: 0, net: 0, matches: [], filtered: false};
+            }
+            if(!filterTags || !filterTags.length){
+                nw = this.getNetWorth(month);
+                if(nw.Net === null){
+                    return {assets: 0, debts: 0, net: 0, matches: [], filtered: false};
+                }
+                return {
+                    assets: nw.Assets,
+                    debts: nw.Debts,
+                    net: nw.Net,
+                    matches: [],
+                    filtered: false
+                };
+            }
+            for(ti = 0; ti < types.length; ti++){
+                type = types[ti];
+                if(!month[type]){
+                    continue;
+                }
+                keys = Object.keys(month[type]);
+                for(ki = 0; ki < keys.length; ki++){
+                    name = keys[ki];
+                    val = month[type][name];
+                    if(val === null || val === undefined){
+                        continue;
+                    }
+                    if(!this.entryMatchesTags(monthRef, type, name, filterTags)){
+                        continue;
+                    }
+                    val = parseFloat(val);
+                    if(type === 'Asset'){
+                        assets += val;
+                    }
+                    else{
+                        debts += val;
+                    }
+                    matches.push({
+                        type: type,
+                        name: name,
+                        value: val,
+                        tags: this.getTagsForEntry(monthRef, type, name)
+                    });
+                }
+            }
+            return {assets: assets, debts: debts, net: assets - debts, matches: matches, filtered: true};
+        },
+        getFilteredLineValue:function(monthRef, graphMode, filterTags){
+            var sum = this.sumTaggedEntries(monthRef, filterTags);
+            if(!sum.filtered){
+                var month = userData.entries[monthRef];
+                if(!month){
+                    return null;
+                }
+                if(graphMode === 'assets'){
+                    return month.Assets != null ? parseFloat(month.Assets) : null;
+                }
+                if(graphMode === 'debts'){
+                    return month.Debts != null ? parseFloat(month.Debts) : null;
+                }
+                return month.NetWorth != null ? parseFloat(month.NetWorth) : null;
+            }
+            if(graphMode === 'assets'){
+                return sum.assets;
+            }
+            if(graphMode === 'debts'){
+                return sum.debts;
+            }
+            return sum.net;
         },
         getNetWorth(obj){
             let Assets, Debts, Net, assetKeys, debtKeys, hit = false;

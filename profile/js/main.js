@@ -36,19 +36,6 @@ function headerModule(sources){
             }   
         });
 
-    let watchChangeGraph$ = sources.DOM.select('.changeGraph')
-        .observable
-        .subscribe((el)=>{
-            if(el.length){
-                var coverDiv = el[0].getElementsByClassName('coverDiv')[0],
-                cardPanel = el[0].nextElementSibling.getElementsByClassName('card-panel')[0];
-                coverDiv.style.top = cardPanel.offsetTop + "px";
-                coverDiv.style.left = cardPanel.offsetLeft + 10 + "px";
-                coverDiv.style.width = cardPanel.offsetWidth - 20 + "px";
-                watchChangeGraph$.dispose();
-            }      
-        });
-
     let editMouseClick$ = sources.DOM.select('.nav .nav-wrapper .name .edit').events('click').subscribe(function(ev){
         var parent = $(ev.currentTarget.parentElement.parentElement);
         parent.find('.name').hide();
@@ -124,19 +111,33 @@ function headerModule(sources){
     sources.DOM.select('.changeGraph button').events('click').subscribe(function(e){
         var $target = $(e.target);
         $target.addClass('active').siblings().removeClass('active');
-        populateNetWorthGraph(userData.entries[userData.keys[userData.lookup]]);
+        refreshProfileView();
     });
 
     sources.DOM.select('.arrow.left').events('click').subscribe(function(){
         userData.lookup -= 1;
         userData.monthString = utility.getMonthString();
-        populateNetWorthGraph(userData.entries[userData.keys[userData.lookup]]);
+        refreshProfileView();
     });
 
     sources.DOM.select('.arrow.right').events('click').subscribe(function(){
         userData.lookup += 1;
         userData.monthString = utility.getMonthString();
-        populateNetWorthGraph(userData.entries[userData.keys[userData.lookup]]);
+        refreshProfileView();
+    });
+
+    sources.DOM.select('.tag-filter-bar').events('click').subscribe(function(ev){
+        var $target = $(ev.target);
+        if($target.hasClass('tag-filter-chip')){
+            $target.toggleClass('active');
+            updateProfileTagFilterFromUI();
+            refreshProfileView();
+        }
+        if($target.hasClass('tag-filter-clear')){
+            utility.setProfileTagFilter([]);
+            $('.tag-filter-chip').removeClass('active');
+            refreshProfileView();
+        }
     });
 
     let vtree$ = Rx.Observable.of(
@@ -187,15 +188,26 @@ function headerModule(sources){
                 ])
             ]),
             br(),
-            div('.row',[
-                div('.col .s12 .m12 .l12 .changeGraph',{style:{opacity:'0'}},[
+            div('.row .tag-filter-bar',{style:{visibility:'hidden'}},[
+                div('.col .s12 .m12 .l12',[
+                    div('.tag-filter-header',[
+                        span('.tag-filter-title','Filter by tags'),
+                        button('.tag-filter-clear .btn-flat','Clear')
+                    ]),
+                    p('.tag-filter-hint .grey-text','Select one or more tags (entries must match all).'),
+                    div('.tag-filter-chips'),
+                    div('.tag-filter-matches')
+                ])
+            ]),
+            br(),
+            div('.row .profile-charts-row',[
+                div('.col .s12 .m12 .l12 .changeGraph',[
                     button('.netWorthGraph .active .drawn','Net Worth'),
                     button('.assetsGraph','Assets'),
-                    button('.debtsGraph','Debts'),
-                    div('.coverDiv')
+                    button('.debtsGraph','Debts')
                 ]),
                 div('.col .s12 .offset-m1 .m10 .offset-l2 .l8',{style:{'padding-left':'20px'}},[
-                    div('.card-panel',{style:{opacity:'0'}},[
+                    div('.card-panel .profile-line-chart-panel',[
                         div('#curve_chart'),
                         div('#curve_chart_assets'),
                         div('#curve_chart_debts')
@@ -203,12 +215,12 @@ function headerModule(sources){
                 ]),
                 br(),
                 div('.col .s6 .offset-m1 .m5 .offset-l2 .l4',{style:{'padding-left':'20px'}},[
-                    div('.card-panel',{style:{opacity:'0'}},[
+                    div('.card-panel .profile-pie-panel',[
                         div('#pie_chart1')
                     ])
                 ]),
                 div('.col .s6 .m5 .l4',[
-                    div('.card-panel',{style:{opacity:'0'}},[
+                    div('.card-panel .profile-pie-panel',[
                         div('#pie_chart2')
                     ])
                 ])
@@ -276,10 +288,75 @@ window.addEventListener('load', function() {
     initApp();
 });
 
+function refreshProfileView(){
+    var dataObj = userData.entries[userData.keys[userData.lookup]];
+    populateNetWorthGraph(dataObj);
+}
+
+function updateProfileTagFilterFromUI(){
+    var selected = [];
+    $('.tag-filter-chip.active').each(function(){
+        selected.push($(this).attr('data-tag'));
+    });
+    utility.setProfileTagFilter(selected);
+}
+
+function renderTagFilterBar(){
+    var tags = utility.getAllTags(), filter = utility.getProfileTagFilter(), $bar = $('.tag-filter-bar'),
+        $chips = $bar.find('.tag-filter-chips'), html = '', i, active;
+    if(!tags.length){
+        $bar.css('visibility', 'hidden');
+        return;
+    }
+    $bar.css('visibility', 'visible');
+    for(i = 0; i < tags.length; i++){
+        active = filter.indexOf(tags[i]) >= 0 ? ' active' : '';
+        html += '<button type="button" class="tag-filter-chip' + active + '" data-tag="' + utility.escapeHtml(tags[i]) + '">' +
+            utility.escapeHtml(tags[i]) + '</button>';
+    }
+    $chips.html(html);
+}
+
+function renderTagFilterMatches(matches){
+    var $el = $('.tag-filter-matches'), filter = utility.getProfileTagFilter(), html, i, m;
+    if(!filter.length){
+        $el.empty().hide();
+        return;
+    }
+    if(!matches.length){
+        $el.html('<p class="grey-text tag-filter-empty">No entries match these tags for this month.</p>').show();
+        return;
+    }
+    html = '<ul class="tag-match-list">';
+    for(i = 0; i < matches.length; i++){
+        m = matches[i];
+        html += '<li><span class="' + (m.type === 'Asset' ? 'green-text' : 'red-text') + '">' +
+            m.type + ': ' + utility.escapeHtml(m.name) + '</span> — $' +
+            parseFloat(m.value).toLocaleString(undefined, {maximumFractionDigits: 0, minimumFractionDigits: 0}) +
+            '</li>';
+    }
+    html += '</ul>';
+    $el.html(html).show();
+}
+
+function formatMoney(amount){
+    return '$' + parseFloat(amount).toLocaleString(undefined, {maximumFractionDigits: 0, minimumFractionDigits: 0});
+}
+
+function getLineGraphMode(title){
+    if(title === 'Assets'){
+        return 'assets';
+    }
+    if(title === 'Debts'){
+        return 'debts';
+    }
+    return 'net';
+}
+
 function updateView(){
     $('.arrow').css('display','inline-block');
     $('#curve_chart').parent().show();
-    $('.changeGraph').show();
+    $('.changeGraph').show().css({opacity: 1, visibility: 'visible'});
     if(userData.lookup === userData.keys.length-1){
         $('.arrow.right').hide();
     }
@@ -294,10 +371,11 @@ function drawLineGraph(ind, passedInTitle){
        let i, 
        indicator = ind || '',
        title = passedInTitle || "Net Worth",
-       dataMap = passedInTitle || "NetWorth",
+       graphMode = getLineGraphMode(passedInTitle),
+       filterTags = utility.getProfileTagFilter(),
        currentString = userData.keys[userData.lookup], 
        entryKeys = [],
-       networthMonth, temp;
+       networthMonth, temp, val;
        let $el = $(document.getElementById('curve_chart'+indicator)),
        dataArr, width, ratio = 2.2;
 
@@ -324,7 +402,11 @@ function drawLineGraph(ind, passedInTitle){
            month = utility.monthMap[parseInt(keyString.substring(4))],
            year = keyString.substring(0,4);
            networthMonth = month + " " + year;
-           prev.push([networthMonth,parseFloat(userData.entries[key][dataMap])]);
+           val = utility.getFilteredLineValue(key, graphMode, filterTags);
+           if(val === null){
+               val = 0;
+           }
+           prev.push([networthMonth, val]);
            return prev;
        },[['Month',title]]);
         
@@ -344,7 +426,7 @@ function drawLineGraph(ind, passedInTitle){
         let options = {
         chart: {
           title: title + ' as of '+networthMonth,
-          subtitle: ''
+          subtitle: filterTags.length ? 'Tags: ' + filterTags.join(', ') : ''
         },
         width: width,
         height: width/ratio
@@ -357,11 +439,14 @@ function drawLineGraph(ind, passedInTitle){
 
 }
 
-function drawPieGraphs(obj,type){
+function drawPieGraphs(){
     let rows = [], chart, el = document.getElementById('pie_chart1'), el2 = document.getElementById('pie_chart2'),
-    dataArr, width, ratio = 2.2;
+    width, ratio = 2.2, filterTags = utility.getProfileTagFilter();
 
     let currentString = userData.keys[userData.lookup];
+
+    el.hidden = true;
+    el2.hidden = true;
 
     // Create the data table.
     let data = new google.visualization.DataTable();
@@ -370,7 +455,9 @@ function drawPieGraphs(obj,type){
 
     if(userData.entries[currentString] && userData.entries[currentString].Asset){
 
-        rows = Object.keys(userData.entries[currentString].Asset).map((key)=>{
+        rows = Object.keys(userData.entries[currentString].Asset).filter((key)=>{
+            return utility.entryMatchesTags(currentString, 'Asset', key, filterTags);
+        }).map((key)=>{
             return [key,parseFloat(userData.entries[currentString].Asset[key])];
         });
     }
@@ -387,14 +474,13 @@ function drawPieGraphs(obj,type){
         ratio = 1.2;
     }
 
-    let options = {'title':'Asset Allocation',
+    let options = {'title': filterTags.length ? 'Assets (filtered)' : 'Asset Allocation',
                 width: width,
                 height: width/ratio};
 
     if(rows.length){
         data.addRows(rows); 
-        // Instantiate and draw our chart, passing in some options.
-        let chart = new google.visualization.PieChart(el);
+        chart = new google.visualization.PieChart(el);
         el.hidden = false;
         chart.draw(data, options);
     }
@@ -410,7 +496,9 @@ function drawPieGraphs(obj,type){
     rows = [];
 
     if(userData.entries[currentString] && userData.entries[currentString].Debt){
-        rows = Object.keys(userData.entries[currentString].Debt).map((key)=>{
+        rows = Object.keys(userData.entries[currentString].Debt).filter((key)=>{
+            return utility.entryMatchesTags(currentString, 'Debt', key, filterTags);
+        }).map((key)=>{
             return [key,parseFloat(userData.entries[currentString].Debt[key])];
         });
     }
@@ -419,10 +507,10 @@ function drawPieGraphs(obj,type){
         data.addRows(rows); 
 
         // Set chart options
-        options.title = 'Debt Allocation';
+        options.title = filterTags.length ? 'Debt (filtered)' : 'Debt Allocation';
 
         // Instantiate and draw our chart, passing in some options.
-        let chart = new google.visualization.PieChart(el2);
+        chart = new google.visualization.PieChart(el2);
         el2.hidden = false;
         chart.draw(data, options);
     }
@@ -430,16 +518,29 @@ function drawPieGraphs(obj,type){
 }
 
 function populateNetWorthGraph(dataObj){
-    let networthHeader, indicator = "", title = "", activeTab;
+    let networthHeader, indicator = "", title = "", activeTab, monthKey, totals, filter;
 
             if(dataObj){
+                monthKey = userData.keys[userData.lookup];
+                filter = utility.getProfileTagFilter();
+                totals = utility.sumTaggedEntries(monthKey, filter);
+
                 updateView();
+                renderTagFilterBar();
+                renderTagFilterMatches(totals.matches);
+
                 networthHeader = document.getElementsByClassName('networth-header')[0];
                 networthHeader.getElementsByClassName('nav-title')[0].textContent = userData.monthString;
-                networthHeader.getElementsByClassName('networth')[0].getElementsByTagName('span')[0].textContent = '$' + parseFloat(dataObj.NetWorth).toLocaleString(undefined, {maximumFractionDigits: 0, minimumFractionDigits: 0});
-                networthHeader.getElementsByClassName('assets')[0].getElementsByTagName('span')[0].textContent = '$' + parseFloat(dataObj.Assets).toLocaleString(undefined, {maximumFractionDigits: 0, minimumFractionDigits: 0});
-                networthHeader.getElementsByClassName('debts')[0].getElementsByTagName('span')[0].textContent = '$' + parseFloat(dataObj.Debts).toLocaleString(undefined, {maximumFractionDigits: 0, minimumFractionDigits: 0});
+                networthHeader.getElementsByClassName('networth')[0].getElementsByTagName('span')[0].textContent = formatMoney(totals.net);
+                networthHeader.getElementsByClassName('assets')[0].getElementsByTagName('span')[0].textContent = formatMoney(totals.assets);
+                networthHeader.getElementsByClassName('debts')[0].getElementsByTagName('span')[0].textContent = formatMoney(totals.debts);
                 networthHeader.style.visibility = "";
+                if(filter.length){
+                    networthHeader.classList.add('tag-filter-active');
+                }
+                else{
+                    networthHeader.classList.remove('tag-filter-active');
+                }
 
                 activeTab = $('.changeGraph .active');
                 if(activeTab.text() === "Assets"){
@@ -451,9 +552,11 @@ function populateNetWorthGraph(dataObj){
                     title = "Debts";
                 }
 
+                $('.changeGraph').css({opacity: 1, visibility: 'visible'});
+                $('.profile-charts-row .card-panel').css('opacity', 1);
+
                 drawLineGraph(indicator,title);
                 drawPieGraphs();
-                $('.card-panel, .changeGraph').css('opacity',1);
             }        
 
 }
