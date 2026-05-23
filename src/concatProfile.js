@@ -62,6 +62,46 @@ var utility = function (profile) {
       // Trailing slash so profile/css/main.css resolves (not /css/main.css)
       return (base ? base + '/' : '/') + path + '/';
     },
+    assetUrl: function assetUrl(suffix) {
+      var base = this.getAppBasePath();
+      var path = (suffix || '').replace(/^\//, '');
+      if (!path) {
+        return base ? base + '/' : '/';
+      }
+      return (base ? base + '/' : '/') + path;
+    },
+    resolvePhotoURL: function resolvePhotoURL(url) {
+      var fallback = this.assetUrl('img/anony.jpg');
+      var src = url || userData.accountURL;
+      if (!src) {
+        return fallback;
+      }
+      if (/^https?:\/\//i.test(src) || /^\/\//.test(src)) {
+        return src;
+      }
+      if (src.charAt(0) === '/') {
+        var base = this.getAppBasePath();
+        if (base && src.indexOf(base + '/') !== 0 && src !== base) {
+          return base + src;
+        }
+        return src;
+      }
+      return this.assetUrl(src);
+    },
+    applyProfilePhoto: function applyProfilePhoto($container) {
+      var $img = $container.find('.profileImg');
+      if (!$img.length) {
+        return;
+      }
+      var el = $img[0];
+      var fallback = this.assetUrl('img/anony.jpg');
+      el.referrerPolicy = 'no-referrer';
+      el.onerror = function () {
+        this.onerror = null;
+        this.src = fallback;
+      };
+      el.src = this.resolvePhotoURL(userData.photoURL);
+    },
     setDatabase: function setDatabase(uid) {
       userDatabase = firebase.database().ref(uid);
     },
@@ -107,13 +147,14 @@ var utility = function (profile) {
         var data = snapshot.val() || {},
           i;
         userData.entries = data.entries || {};
+        userData.tagSeries = data.tagSeries || {};
         if (!firstSnapshot) {
           firstSnapshot = true;
           userData.profileTagFilter = [];
           userData.displayName = data.displayName;
           userData.photoURL = data.photoURL;
           userData.keys = Object.keys(userData.entries);
-          $el.find('.profileImg')[0].src = userData.photoURL;
+          utilityThis.applyProfilePhoto($el);
           $el.find('.name').text(userData.displayName);
           var dateObj = utility.getDateObject();
           userData.currentMonth = dateObj.month;
@@ -121,7 +162,6 @@ var utility = function (profile) {
           var dataObj = utility.getDataObjProfile();
           userData.monthString = utility.getMonthString();
           populateNetWorthGraph(dataObj);
-          console.log($el);
         }
       });
     },
@@ -614,6 +654,158 @@ var utility = function (profile) {
       }
       return sum.net;
     },
+    getTagSeriesList: function getTagSeriesList() {
+      var raw = userData.tagSeries || {},
+        list = [],
+        id;
+      for (id in raw) {
+        if (!raw.hasOwnProperty(id)) {
+          continue;
+        }
+        list.push({
+          id: id,
+          label: raw[id].label || id,
+          tags: this.normalizeTags(raw[id].tags || []),
+          negate: !!raw[id].negate
+        });
+      }
+      list.sort(function (a, b) {
+        return a.label.localeCompare(b.label);
+      });
+      return list;
+    },
+    seriesTagsKey: function seriesTagsKey(tags) {
+      return this.normalizeTags(tags).slice().sort().join('|');
+    },
+    findTagSeriesByTags: function findTagSeriesByTags(tags) {
+      var key = this.seriesTagsKey(tags),
+        list = this.getTagSeriesList(),
+        i;
+      for (i = 0; i < list.length; i++) {
+        if (this.seriesTagsKey(list[i].tags) === key) {
+          return list[i];
+        }
+      }
+      return null;
+    },
+    saveTagSeries: function saveTagSeries(label, tags, negate) {
+      var normalized = this.normalizeTags(tags),
+        ref,
+        id,
+        payload;
+      if (!label || !normalized.length) {
+        return null;
+      }
+      if (this.getTagSeriesList().length >= 5) {
+        return null;
+      }
+      if (this.findTagSeriesByTags(normalized)) {
+        return null;
+      }
+      payload = {
+        label: label,
+        tags: normalized,
+        negate: !!negate
+      };
+      ref = userDatabase.child('tagSeries').push();
+      id = ref.key;
+      ref.set(payload);
+      if (!userData.tagSeries) {
+        userData.tagSeries = {};
+      }
+      userData.tagSeries[id] = payload;
+      return id;
+    },
+    setTagSeriesNegate: function setTagSeriesNegate(id, negate) {
+      if (!userData.tagSeries || !userData.tagSeries[id]) {
+        return;
+      }
+      userData.tagSeries[id].negate = !!negate;
+      userDatabase.child('tagSeries/' + id + '/negate').set(!!negate);
+    },
+    removeTagSeries: function removeTagSeries(id) {
+      userDatabase.child('tagSeries/' + id).remove();
+      if (userData.tagSeries) {
+        delete userData.tagSeries[id];
+      }
+    },
+    monthHasTaggedSeriesData: function monthHasTaggedSeriesData(monthRef, series) {
+      return this.sumTaggedEntries(monthRef, series.tags).matches.length > 0;
+    },
+    getSeriesChartMonthKeys: function getSeriesChartMonthKeys(seriesList, endMonthKey) {
+      var keys = [],
+        relevant = [],
+        i,
+        ki,
+        monthKey,
+        si;
+      if (!seriesList || !seriesList.length) {
+        return [];
+      }
+      for (i = 0; i < userData.keys.length; i++) {
+        keys.push(userData.keys[i]);
+        if (userData.keys[i] === endMonthKey) {
+          break;
+        }
+      }
+      for (ki = 0; ki < keys.length; ki++) {
+        monthKey = keys[ki].toString();
+        for (si = 0; si < seriesList.length; si++) {
+          if (this.monthHasTaggedSeriesData(monthKey, seriesList[si])) {
+            relevant.push(monthKey);
+            break;
+          }
+        }
+      }
+      return relevant;
+    },
+    getSeriesLineValue: function getSeriesLineValue(monthKey, graphMode, series) {
+      var sum, val;
+      sum = this.sumTaggedEntries(monthKey, series.tags);
+      if (!sum.matches.length) {
+        return null;
+      }
+      if (graphMode === 'assets') {
+        val = sum.assets;
+      } else if (graphMode === 'debts') {
+        val = sum.debts;
+      } else {
+        val = sum.net;
+      }
+      if (series.negate) {
+        val = -val;
+      }
+      return val;
+    },
+    buildSeriesChartRows: function buildSeriesChartRows(seriesList, graphMode, endMonthKey) {
+      var keys, ki, header, rows, monthKey, monthLabel, row, si, val;
+      if (!seriesList || !seriesList.length) {
+        return null;
+      }
+      keys = this.getSeriesChartMonthKeys(seriesList, endMonthKey);
+      if (keys.length <= 1) {
+        return null;
+      }
+      header = ['Month'];
+      for (si = 0; si < seriesList.length; si++) {
+        header.push(seriesList[si].label + (seriesList[si].negate ? ' (sign flipped)' : ''));
+      }
+      rows = [header];
+      for (ki = 0; ki < keys.length; ki++) {
+        monthKey = keys[ki].toString();
+        monthLabel = this.monthMap[parseInt(monthKey.substring(4), 10)] + ' ' + monthKey.substring(0, 4);
+        row = [monthLabel];
+        for (si = 0; si < seriesList.length; si++) {
+          val = this.getSeriesLineValue(monthKey, graphMode, seriesList[si]);
+          row.push(val === null ? null : val);
+        }
+        rows.push(row);
+      }
+      return {
+        rows: rows,
+        monthCount: keys.length
+      };
+    },
     getNetWorth: function getNetWorth(obj) {
       var Assets,
         Debts,
@@ -787,27 +979,47 @@ function headerModule(sources) {
     refreshProfileView();
   });
   sources.DOM.select('.tag-filter-bar').events('click').subscribe(function (ev) {
-    var $target = $(ev.target);
+    var $target = $(ev.target).closest('.tag-filter-chip, .tag-filter-clear, .tag-filter-add-line, .tag-series-remove, .tag-series-negate');
+    if (!$target.length) {
+      return;
+    }
     if ($target.hasClass('tag-filter-chip')) {
       $target.toggleClass('active');
       updateProfileTagFilterFromUI();
       refreshProfileView();
+      return;
     }
     if ($target.hasClass('tag-filter-clear')) {
       utility.setProfileTagFilter([]);
       $('.tag-filter-chip').removeClass('active');
       refreshProfileView();
+      return;
+    }
+    if ($target.hasClass('tag-filter-add-line')) {
+      addTagSeriesFromFilter();
+      return;
+    }
+    if ($target.hasClass('tag-series-negate')) {
+      utility.setTagSeriesNegate($target.attr('data-id'), !$target.hasClass('active'));
+      refreshProfileView();
+      return;
+    }
+    if ($target.hasClass('tag-series-remove')) {
+      utility.removeTagSeries($target.attr('data-id'));
+      refreshProfileView();
     }
   });
-  var vtree$ = Rx.Observable.of(div([div('.nav', {
-    style: 'height:120px;'
-  }, [div('.nav-wrapper', [div('.logout', {
+  var vtree$ = Rx.Observable.of(div([div('.nav.profile-header', [div('.nav-wrapper', [div('.logout', {
     style: {
       padding: '5px',
       color: '#cecece',
       cursor: 'pointer'
     }
-  }, [span('Sign Out')]), a('.brand-logo .center', 'Worth Watchers'), img('.profileImg .center'), label('.name .center' /*,{style:{display:'none'}}*/), div('.input-field .col', {
+  }, [span('Sign Out')]), a('.brand-logo .center', 'Worth Watchers'), img('.profileImg .center', {
+    attributes: {
+      alt: 'Profile photo'
+    }
+  }), label('.name .center' /*,{style:{display:'none'}}*/), div('.input-field .col', {
     style: {
       'display': 'none',
       'width': '150px',
@@ -822,7 +1034,7 @@ function headerModule(sources) {
       'font-size': '16px',
       'text-align': 'center'
     }
-  }), label('Name'), i('.material-icons .update', 'done')]), i('.material-icons .edit .hide', 'mode_edit')])]), br(), br(), div('.row .networth-header', {
+  }), label('Name'), i('.material-icons .update', 'done')]), i('.material-icons .edit .hide', 'mode_edit')])]), div('.profile-header-spacer'), div('.row .networth-header', {
     style: {
       visibility: 'hidden',
       'padding-left': '10px'
@@ -845,7 +1057,16 @@ function headerModule(sources) {
     style: {
       visibility: 'hidden'
     }
-  }, [div('.col .s12 .m12 .l12', [div('.tag-filter-header', [span('.tag-filter-title', 'Filter by tags'), button('.tag-filter-clear .btn-flat', 'Clear')]), p('.tag-filter-hint .grey-text', 'Select one or more tags (entries must match all).'), div('.tag-filter-chips'), div('.tag-filter-matches')])]), br(), div('.row .profile-charts-row', [div('.col .s12 .m12 .l12 .changeGraph', [button('.netWorthGraph .active .drawn', 'Net Worth'), button('.assetsGraph', 'Assets'), button('.debtsGraph', 'Debts')]), div('.col .s12 .offset-m1 .m10 .offset-l2 .l8', {
+  }, [div('.col .s12 .m12 .l12', [div('.tag-filter-header', [span('.tag-filter-title', 'Filter by tags'), span('.tag-filter-actions', [button('.tag-filter-add-line .btn-flat', 'Add line'), button('.tag-filter-clear .btn-flat', 'Clear')])]), p('.tag-filter-hint .grey-text', 'Select tags to filter this month. Use Add line to save a comparison (then pick other tags for the next line).'), label('.tag-series-add-negate-wrap', [input('.tag-series-add-negate', {
+    type: 'checkbox',
+    attributes: {
+      checked: false
+    }
+  }), span(' Flip sign for next line (invert positive/negative on chart)')]), div('.tag-filter-chips'), div('.tag-filter-matches'), div('.tag-series-list')])]), br(), div('.row .tag-series-chart-row', {
+    style: {
+      display: 'none'
+    }
+  }, [div('.col .s12 .offset-m1 .m10 .offset-l2 .l8', [p('.tag-series-chart-hint .grey-text', 'Comparison lines (Net Worth / Assets / Debts tabs apply)'), div('.card-panel .tag-series-chart-panel', [div('#curve_chart_compare')])])]), br(), div('.row .profile-charts-row', [div('.col .s12 .m12 .l12 .changeGraph', [button('.netWorthGraph .active .drawn', 'Net Worth'), button('.assetsGraph', 'Assets'), button('.debtsGraph', 'Debts')]), div('.col .s12 .offset-m1 .m10 .offset-l2 .l8', {
     style: {
       'padding-left': '20px'
     }
@@ -876,6 +1097,10 @@ var initApp = function initApp() {
   var params = new URLSearchParams(location.search);
   userLookup = params.get('user');
   firebase.auth().onAuthStateChanged(function (user) {
+    if (user) {
+      userData.accountName = user.displayName;
+      userData.accountURL = user.photoURL || utility.assetUrl('img/anony.jpg');
+    }
     if (userLookup) {
       utility.setDatabase(userLookup);
       Cycle.run(page, drivers);
@@ -912,11 +1137,20 @@ function updateProfileTagFilterFromUI() {
   });
   utility.setProfileTagFilter(selected);
 }
+function profileToast(message) {
+  if (typeof Materialize !== 'undefined' && Materialize.toast) {
+    Materialize.toast(message, 4000);
+  } else {
+    window.alert(message);
+  }
+}
 function renderTagFilterBar() {
   var tags = utility.getAllTags(),
     filter = utility.getProfileTagFilter(),
     $bar = $('.tag-filter-bar'),
     $chips = $bar.find('.tag-filter-chips'),
+    $addLine = $bar.find('.tag-filter-add-line'),
+    $negateWrap = $bar.find('.tag-series-add-negate-wrap'),
     html = '',
     i,
     active;
@@ -930,6 +1164,13 @@ function renderTagFilterBar() {
     html += '<button type="button" class="tag-filter-chip' + active + '" data-tag="' + utility.escapeHtml(tags[i]) + '">' + utility.escapeHtml(tags[i]) + '</button>';
   }
   $chips.html(html);
+  if (filter.length && utility.profileEdit && utility.getTagSeriesList().length < 5) {
+    $addLine.show();
+    $negateWrap.show();
+  } else {
+    $addLine.hide();
+    $negateWrap.hide();
+  }
 }
 function renderTagFilterMatches(matches) {
   var $el = $('.tag-filter-matches'),
@@ -970,6 +1211,133 @@ function getLineGraphMode(title) {
     return 'debts';
   }
   return 'net';
+}
+function getActiveGraphTitle() {
+  var activeTab = $('.changeGraph .active');
+  if (activeTab.text() === 'Assets') {
+    return 'Assets';
+  }
+  if (activeTab.text() === 'Debts') {
+    return 'Debts';
+  }
+  return 'Net Worth';
+}
+function addTagSeriesFromFilter() {
+  var tags = utility.getProfileTagFilter(),
+    label,
+    id;
+  if (!tags.length) {
+    profileToast('Select one or more tags first, then click Add line.');
+    return;
+  }
+  if (utility.findTagSeriesByTags(tags)) {
+    profileToast('A line with these tags already exists.');
+    return;
+  }
+  if (utility.getTagSeriesList().length >= 5) {
+    profileToast('You can save up to 5 comparison lines.');
+    return;
+  }
+  label = tags.join(' + ');
+  id = utility.saveTagSeries(label, tags, $('.tag-series-add-negate').prop('checked'));
+  if (!id) {
+    profileToast('Could not save this line.');
+    return;
+  }
+  utility.setProfileTagFilter([]);
+  $('.tag-filter-chip').removeClass('active');
+  $('.tag-series-add-negate').prop('checked', false);
+  profileToast('Added comparison line: ' + label);
+  refreshProfileView();
+}
+function renderTagSeriesList() {
+  var seriesList = utility.getTagSeriesList();
+  var $list = $('.tag-series-list');
+  var html, i, s;
+  if (!seriesList.length) {
+    $list.empty().hide();
+    return;
+  }
+  html = '<p class="tag-series-list-title">Comparison lines</p><ul class="tag-series-saved">';
+  for (i = 0; i < seriesList.length; i++) {
+    s = seriesList[i];
+    html += '<li class="tag-series-item"><span class="tag-series-item-label">' + utility.escapeHtml(s.label) + '</span>';
+    if (utility.profileEdit) {
+      html += ' <button type="button" class="tag-series-negate btn-flat' + (s.negate ? ' active' : '') + '" data-id="' + utility.escapeHtml(s.id) + '">Flip sign</button>';
+      html += ' <button type="button" class="tag-series-remove btn-flat" data-id="' + utility.escapeHtml(s.id) + '">Remove</button>';
+    } else if (s.negate) {
+      html += ' <span class="tag-series-negate-label">(sign flipped)</span>';
+    }
+    html += '</li>';
+  }
+  html += '</ul>';
+  $list.html(html).show();
+}
+function drawTagSeriesChart(graphMode) {
+  var seriesList = utility.getTagSeriesList();
+  var $wrap = $('.tag-series-chart-row');
+  var $el = $('#curve_chart_compare');
+  var monthKey, chartData, rows, data, width, ratio, options, title, chart, subtitle;
+  if (!seriesList.length || userData.lookup === 0) {
+    $wrap.hide();
+    return;
+  }
+  monthKey = userData.keys[userData.lookup];
+  chartData = utility.buildSeriesChartRows(seriesList, graphMode, monthKey);
+  if (!chartData) {
+    $wrap.hide();
+    return;
+  }
+  rows = chartData.rows;
+  $wrap.show();
+  $el.show();
+  data = google.visualization.arrayToDataTable(rows);
+  width = $el.parent().width() - 10;
+  ratio = 2.2;
+  if (width < 900) {
+    ratio = 1.5;
+  }
+  if (width < 450) {
+    ratio = 1.2;
+  }
+  if (graphMode === 'assets') {
+    title = 'Assets';
+  } else if (graphMode === 'debts') {
+    title = 'Debts';
+  } else {
+    title = 'Net Worth';
+  }
+  subtitle = chartData.monthCount + ' month' + (chartData.monthCount === 1 ? '' : 's') + ' with tagged entries';
+  if (chartData.monthCount < userData.lookup + 1) {
+    subtitle += ' (zoomed to tagged date range)';
+  }
+  options = {
+    chart: {
+      title: title + ' by tag group (through ' + userData.monthString + ')',
+      subtitle: subtitle
+    },
+    width: width,
+    height: width / ratio,
+    series: {
+      0: {
+        color: '#4caf50'
+      },
+      1: {
+        color: '#2196f3'
+      },
+      2: {
+        color: '#ff9800'
+      },
+      3: {
+        color: '#9c27b0'
+      },
+      4: {
+        color: '#e91e63'
+      }
+    }
+  };
+  chart = new google.charts.Line($el[0]);
+  chart.draw(data, options);
 }
 function updateView() {
   $('.arrow').css('display', 'inline-block');
@@ -1136,6 +1504,7 @@ function populateNetWorthGraph(dataObj) {
     updateView();
     renderTagFilterBar();
     renderTagFilterMatches(totals.matches);
+    renderTagSeriesList();
     networthHeader = document.getElementsByClassName('networth-header')[0];
     networthHeader.getElementsByClassName('nav-title')[0].textContent = userData.monthString;
     networthHeader.getElementsByClassName('networth')[0].getElementsByTagName('span')[0].textContent = formatMoney(totals.net);
@@ -1163,5 +1532,6 @@ function populateNetWorthGraph(dataObj) {
     $('.profile-charts-row .card-panel').css('opacity', 1);
     drawLineGraph(indicator, title);
     drawPieGraphs();
+    drawTagSeriesChart(getLineGraphMode(getActiveGraphTitle()));
   }
 }

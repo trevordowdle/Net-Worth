@@ -41,7 +41,7 @@ var initApp = function() {
                 }
             }
             userData.accountName = user.displayName;
-            userData.accountURL = user.photoURL || 'img/anony.jpg';
+            userData.accountURL = user.photoURL || utility.assetUrl('img/anony.jpg');
             utility.setDatabase(user.uid);
             Cycle.run(page, drivers);
         } else {

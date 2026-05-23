@@ -21,6 +21,24 @@
   -webkit-font-smoothing: antialiased;
 }
 
+/* Pink bar only; photo and name overlap onto white below */
+.nav.profile-header {
+    height: 120px;
+    overflow: visible;
+    position: relative;
+    z-index: 2;
+}
+
+.nav.profile-header .nav-wrapper {
+    position: relative;
+    height: 120px;
+    overflow: visible;
+}
+
+.profile-header-spacer {
+    height: 100px;
+}
+
 .profileImg {
     width: 100px;
     height: 100px;
@@ -29,6 +47,11 @@
     border-radius: 50%;
     position: absolute;
     top: 70px;
+    z-index: 3;
+    display: block;
+    border: 3px solid #fff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    background-color: #fff;
 }
 
 .profileImg.center {
@@ -46,10 +69,12 @@
 }
 
 .name {
-    position:absolute;
+    position: absolute;
     top: 162px;
-    font-size:16px;
+    font-size: 16px;
     line-height: 56px;
+    color: #424242;
+    z-index: 3;
 }
 
 .nav .brand-logo {
@@ -253,6 +278,38 @@ button.arrow.right:active i:last-child {
   align-items: center;
   justify-content: space-between;
   margin-bottom: 4px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tag-filter-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.tag-filter-add-line {
+  padding: 0 10px;
+  height: 32px;
+  line-height: 32px;
+  font-size: 12px;
+  color: #2e7d32 !important;
+  font-weight: 600;
+  display: none;
+}
+
+.tag-series-add-negate-wrap {
+  display: none;
+  font-size: 12px;
+  color: #616161;
+  margin: 0 0 8px 0;
+  cursor: pointer;
+}
+
+.tag-series-add-negate-wrap input {
+  position: relative;
+  left: 0;
+  visibility: visible;
 }
 
 .tag-filter-title {
@@ -325,6 +382,74 @@ button.arrow.right:active i:last-child {
   content: ' *';
   color: #9e9e9e;
   font-size: 11px;
+}
+
+/* Tag series comparison (phase 3) */
+.tag-series-list {
+  margin-top: 10px;
+}
+
+.tag-series-list-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #616161;
+  margin: 0 0 4px 0;
+}
+
+.tag-series-chart-row {
+  max-width: 900px;
+  margin: 0 auto 12px;
+}
+
+.tag-series-chart-hint {
+  font-size: 11px;
+  margin: 0 0 6px 12px;
+}
+
+.tag-series-saved {
+  margin: 0 0 12px 0;
+  padding-left: 0;
+  list-style: none;
+}
+
+.tag-series-item {
+  font-size: 13px;
+  padding: 6px 0;
+  border-bottom: 1px solid #eee;
+}
+
+.tag-series-item-label {
+  font-weight: 600;
+}
+
+.tag-series-negate {
+  padding: 0 6px;
+  height: 28px;
+  line-height: 28px;
+  font-size: 12px;
+  color: #757575 !important;
+}
+
+.tag-series-negate.active {
+  color: #c62828 !important;
+  font-weight: 600;
+}
+
+.tag-series-negate-label {
+  font-size: 11px;
+  color: #c62828;
+}
+
+.tag-series-remove {
+  padding: 0 6px;
+  height: 28px;
+  line-height: 28px;
+  font-size: 12px;
+  color: #757575 !important;
+}
+
+.tag-series-chart-panel {
+  padding: 12px 8px 8px;
 }
 
 

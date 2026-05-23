@@ -64,6 +64,46 @@ var utility = function(profile){
             // Trailing slash so profile/css/main.css resolves (not /css/main.css)
             return (base ? base + '/' : '/') + path + '/';
         },
+        assetUrl:function(suffix){
+            var base = this.getAppBasePath();
+            var path = (suffix || '').replace(/^\//, '');
+            if(!path){
+                return base ? base + '/' : '/';
+            }
+            return (base ? base + '/' : '/') + path;
+        },
+        resolvePhotoURL:function(url){
+            var fallback = this.assetUrl('img/anony.jpg');
+            var src = url || userData.accountURL;
+            if(!src){
+                return fallback;
+            }
+            if(/^https?:\/\//i.test(src) || /^\/\//.test(src)){
+                return src;
+            }
+            if(src.charAt(0) === '/'){
+                var base = this.getAppBasePath();
+                if(base && src.indexOf(base + '/') !== 0 && src !== base){
+                    return base + src;
+                }
+                return src;
+            }
+            return this.assetUrl(src);
+        },
+        applyProfilePhoto:function($container){
+            var $img = $container.find('.profileImg');
+            if(!$img.length){
+                return;
+            }
+            var el = $img[0];
+            var fallback = this.assetUrl('img/anony.jpg');
+            el.referrerPolicy = 'no-referrer';
+            el.onerror = function(){
+                this.onerror = null;
+                this.src = fallback;
+            };
+            el.src = this.resolvePhotoURL(userData.photoURL);
+        },
         setDatabase:function(uid){
             userDatabase = firebase.database().ref(uid);    
         },
@@ -113,13 +153,15 @@ var utility = function(profile){
                let data = snapshot.val() || {}, i;
                userData.entries = data.entries || {};
             
+               userData.tagSeries = data.tagSeries || {};
+
                if(!firstSnapshot){
                    firstSnapshot = true;
                    userData.profileTagFilter = [];
                    userData.displayName = data.displayName;
                    userData.photoURL = data.photoURL;
                    userData.keys = Object.keys(userData.entries);
-                   $el.find('.profileImg')[0].src = userData.photoURL;
+                   utilityThis.applyProfilePhoto($el);
                    $el.find('.name').text(userData.displayName);
                    let dateObj = utility.getDateObject();
                    userData.currentMonth = dateObj.month;
@@ -127,7 +169,6 @@ var utility = function(profile){
                    let dataObj = utility.getDataObjProfile();
                    userData.monthString = utility.getMonthString();
                    populateNetWorthGraph(dataObj);
-                   console.log($el);
                }
 
             });
@@ -574,6 +615,141 @@ var utility = function(profile){
                 return sum.debts;
             }
             return sum.net;
+        },
+        getTagSeriesList:function(){
+            var raw = userData.tagSeries || {}, list = [], id;
+            for(id in raw){
+                if(!raw.hasOwnProperty(id)){
+                    continue;
+                }
+                list.push({
+                    id: id,
+                    label: raw[id].label || id,
+                    tags: this.normalizeTags(raw[id].tags || []),
+                    negate: !!raw[id].negate
+                });
+            }
+            list.sort(function(a, b){
+                return a.label.localeCompare(b.label);
+            });
+            return list;
+        },
+        seriesTagsKey:function(tags){
+            return this.normalizeTags(tags).slice().sort().join('|');
+        },
+        findTagSeriesByTags:function(tags){
+            var key = this.seriesTagsKey(tags), list = this.getTagSeriesList(), i;
+            for(i = 0; i < list.length; i++){
+                if(this.seriesTagsKey(list[i].tags) === key){
+                    return list[i];
+                }
+            }
+            return null;
+        },
+        saveTagSeries:function(label, tags, negate){
+            var normalized = this.normalizeTags(tags), ref, id, payload;
+            if(!label || !normalized.length){
+                return null;
+            }
+            if(this.getTagSeriesList().length >= 5){
+                return null;
+            }
+            if(this.findTagSeriesByTags(normalized)){
+                return null;
+            }
+            payload = {label: label, tags: normalized, negate: !!negate};
+            ref = userDatabase.child('tagSeries').push();
+            id = ref.key;
+            ref.set(payload);
+            if(!userData.tagSeries){
+                userData.tagSeries = {};
+            }
+            userData.tagSeries[id] = payload;
+            return id;
+        },
+        setTagSeriesNegate:function(id, negate){
+            if(!userData.tagSeries || !userData.tagSeries[id]){
+                return;
+            }
+            userData.tagSeries[id].negate = !!negate;
+            userDatabase.child('tagSeries/' + id + '/negate').set(!!negate);
+        },
+        removeTagSeries:function(id){
+            userDatabase.child('tagSeries/' + id).remove();
+            if(userData.tagSeries){
+                delete userData.tagSeries[id];
+            }
+        },
+        monthHasTaggedSeriesData:function(monthRef, series){
+            return this.sumTaggedEntries(monthRef, series.tags).matches.length > 0;
+        },
+        getSeriesChartMonthKeys:function(seriesList, endMonthKey){
+            var keys = [], relevant = [], i, ki, monthKey, si;
+            if(!seriesList || !seriesList.length){
+                return [];
+            }
+            for(i = 0; i < userData.keys.length; i++){
+                keys.push(userData.keys[i]);
+                if(userData.keys[i] === endMonthKey){
+                    break;
+                }
+            }
+            for(ki = 0; ki < keys.length; ki++){
+                monthKey = keys[ki].toString();
+                for(si = 0; si < seriesList.length; si++){
+                    if(this.monthHasTaggedSeriesData(monthKey, seriesList[si])){
+                        relevant.push(monthKey);
+                        break;
+                    }
+                }
+            }
+            return relevant;
+        },
+        getSeriesLineValue:function(monthKey, graphMode, series){
+            var sum, val;
+            sum = this.sumTaggedEntries(monthKey, series.tags);
+            if(!sum.matches.length){
+                return null;
+            }
+            if(graphMode === 'assets'){
+                val = sum.assets;
+            }
+            else if(graphMode === 'debts'){
+                val = sum.debts;
+            }
+            else{
+                val = sum.net;
+            }
+            if(series.negate){
+                val = -val;
+            }
+            return val;
+        },
+        buildSeriesChartRows:function(seriesList, graphMode, endMonthKey){
+            var keys, ki, header, rows, monthKey, monthLabel, row, si, val;
+            if(!seriesList || !seriesList.length){
+                return null;
+            }
+            keys = this.getSeriesChartMonthKeys(seriesList, endMonthKey);
+            if(keys.length <= 1){
+                return null;
+            }
+            header = ['Month'];
+            for(si = 0; si < seriesList.length; si++){
+                header.push(seriesList[si].label + (seriesList[si].negate ? ' (sign flipped)' : ''));
+            }
+            rows = [header];
+            for(ki = 0; ki < keys.length; ki++){
+                monthKey = keys[ki].toString();
+                monthLabel = this.monthMap[parseInt(monthKey.substring(4), 10)] + ' ' + monthKey.substring(0, 4);
+                row = [monthLabel];
+                for(si = 0; si < seriesList.length; si++){
+                    val = this.getSeriesLineValue(monthKey, graphMode, seriesList[si]);
+                    row.push(val === null ? null : val);
+                }
+                rows.push(row);
+            }
+            return {rows: rows, monthCount: keys.length};
         },
         getNetWorth(obj){
             let Assets, Debts, Net, assetKeys, debtKeys, hit = false;
