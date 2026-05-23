@@ -10,7 +10,9 @@ function sideNavModule(sources){
   }).startWith('');
     
   let getClickAdd$ = sources.DOM.select('.btn-floating.add').events('click').map(ev => {
-    $('#modal1').openModal();     
+    var $modal = $('#modal1');
+    $modal.find('.entry-tags-input').val('').next('label').removeClass('active');
+    $modal.openModal();
   });
 
   let getClickEdit$ = sources.DOM.select('#sideNav').events('click')
@@ -36,6 +38,13 @@ function sideNavModule(sources){
       $('#modal2').find('select').val(itemType).material_select();
       $('#modal2').find('#name').val(infoItems[0]).next().addClass('active');
       $('#modal2').find('#value').val(infoItems[1]).next().addClass('active');
+      var entryTags = item.getAttribute('data-tags');
+      if(!entryTags){
+          entryTags = utility.tagsToInputValue(
+              utility.getTagsForDisplay(itemType, infoItems[0].trim(), utility.getDataObj())
+          );
+      }
+      $('#modal2').find('.entry-tags-input').val(entryTags).next().addClass('active');
       $('#modal2').data("item",item);
       $('#modal2').openModal();
       ev.preventDefault();
@@ -163,8 +172,8 @@ function populateNetWorthValues(dataObj,$elAsset,$elDebt){
           networthHeader.style.opacity = 1;   
         }
 
-        addValues(dataObj['Asset'],'$','Asset',$elAsset,dataObj.entryGrey);
-        addValues(dataObj['Debt'],'$','Debt',$elDebt,dataObj.entryGrey);
+        addValues(dataObj['Asset'],'$','Asset',$elAsset,dataObj);
+        addValues(dataObj['Debt'],'$','Debt',$elDebt,dataObj);
         dataObj.entryGrey = undefined;
     }
     else{
@@ -284,12 +293,12 @@ function drawGraph(obj,type){
     chart.draw(data, options);
 }
 
-function addValues(valueObj,prefix,type,$el,entryGrey){ 
+function addValues(valueObj,prefix,type,$el,dataObj){ 
     if(valueObj){
-    //debugger;
         Object.keys(valueObj).map(function(key){
             let entry = utility.formatEntry({type:type,name:key,value:valueObj[key]});
-            entry.grey = entryGrey ? 'entry-grey' : '';
+            entry.grey = dataObj.entryGrey ? 'entry-grey' : '';
+            entry.tags = utility.getTagsForDisplay(type, key, dataObj);
             $el.append(utility.entryRowHtml(entry));
         });
         

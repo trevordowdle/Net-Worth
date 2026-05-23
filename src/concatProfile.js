@@ -134,10 +134,102 @@ var utility = function (profile) {
       month = month < 10 ? '0' + month : month;
       return year + '' + month;
     },
+    getCurrentMonthRef: function getCurrentMonthRef() {
+      return this.getReferenceStr(userData.currentMonth, userData.currentYear);
+    },
+    getPreviousMonthRef: function getPreviousMonthRef(month, year) {
+      var tempMonth = (month !== undefined ? month : userData.currentMonth) - 1;
+      var tempYear = year !== undefined ? year : userData.currentYear;
+      if (tempMonth === 0) {
+        tempMonth = 12;
+        tempYear -= 1;
+      }
+      return this.getReferenceStr(tempMonth, tempYear);
+    },
+    normalizeTags: function normalizeTags(input) {
+      var list,
+        seen = {},
+        out = [],
+        i,
+        t;
+      if (!input) {
+        return [];
+      }
+      list = Array.isArray(input) ? input : String(input).split(',');
+      for (i = 0; i < list.length; i++) {
+        t = String(list[i]).trim().toLowerCase();
+        if (t && !seen[t]) {
+          seen[t] = true;
+          out.push(t);
+        }
+      }
+      return out.slice(0, 10);
+    },
+    tagsToInputValue: function tagsToInputValue(tags) {
+      return (tags || []).join(', ');
+    },
+    getTagsForEntry: function getTagsForEntry(monthRef, type, name) {
+      var month = userData.entries[monthRef];
+      var tags;
+      if (!month || !month.tags || !month.tags[type]) {
+        return [];
+      }
+      tags = month.tags[type][name];
+      return Array.isArray(tags) ? tags : [];
+    },
+    getTagsForDisplay: function getTagsForDisplay(type, name, dataObj) {
+      var currentRef = this.getCurrentMonthRef();
+      var currentTags = this.getTagsForEntry(currentRef, type, name);
+      if (currentTags.length) {
+        return currentTags;
+      }
+      if (dataObj && dataObj.entryGrey) {
+        return this.getTagsForEntry(this.getPreviousMonthRef(), type, name);
+      }
+      return [];
+    },
+    escapeHtml: function escapeHtml(str) {
+      return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    },
+    formatTagsHtml: function formatTagsHtml(tags, grey) {
+      var i,
+        cls,
+        html = '',
+        safe;
+      if (!tags || !tags.length) {
+        return '';
+      }
+      cls = grey ? 'entry-tag entry-tag-grey' : 'entry-tag';
+      html = '<span class="entry-tags">';
+      for (i = 0; i < tags.length; i++) {
+        safe = this.escapeHtml(tags[i]);
+        html += '<span class="' + cls + '">' + safe + '</span>';
+      }
+      html += '</span>';
+      return html;
+    },
+    syncEntryTagsLocal: function syncEntryTagsLocal(refDate, type, name, tags) {
+      if (!userData.entries[refDate]) {
+        userData.entries[refDate] = {};
+      }
+      if (!userData.entries[refDate].tags) {
+        userData.entries[refDate].tags = {};
+      }
+      if (!userData.entries[refDate].tags[type]) {
+        userData.entries[refDate].tags[type] = {};
+      }
+      if (tags.length) {
+        userData.entries[refDate].tags[type][name] = tags;
+      } else {
+        delete userData.entries[refDate].tags[type][name];
+      }
+    },
     updateData: function updateData(entry) {
       var updateObj = {},
         refDate = this.getReferenceStr(userData.currentMonth, userData.currentYear),
         refStr = 'entries/' + refDate,
+        tagPath,
+        normalizedTags,
         netWorthData;
       if (!userData.entries[refDate]) {
         userData.entries[refDate] = {};
@@ -145,7 +237,11 @@ var utility = function (profile) {
       if (!userData.entries[refDate][entry.type]) {
         userData.entries[refDate][entry.type] = {};
       }
-      userData.entries[refDate][entry.type][entry.name] = entry.value;
+      if (entry.value === null) {
+        userData.entries[refDate][entry.type][entry.name] = null;
+      } else {
+        userData.entries[refDate][entry.type][entry.name] = entry.value;
+      }
       netWorthData = this.getNetWorth(userData.entries[refDate]);
       if (netWorthData.Net !== null) {
         updateObj[refStr + '/NetWorth'] = parseFloat(netWorthData.Net).toFixed(2);
@@ -157,6 +253,19 @@ var utility = function (profile) {
         updateObj[refStr + '/Debts'] = null;
       }
       updateObj[refStr + '/' + entry.type + '/' + entry.name] = entry.value;
+      tagPath = refStr + '/tags/' + entry.type + '/' + entry.name;
+      if (entry.value === null) {
+        updateObj[tagPath] = null;
+        this.syncEntryTagsLocal(refDate, entry.type, entry.name, []);
+      } else if (entry.tags !== undefined) {
+        normalizedTags = this.normalizeTags(entry.tags);
+        if (normalizedTags.length) {
+          updateObj[tagPath] = normalizedTags;
+        } else {
+          updateObj[tagPath] = null;
+        }
+        this.syncEntryTagsLocal(refDate, entry.type, entry.name, normalizedTags);
+      }
       userDatabase.update(updateObj);
       utility.populateValues(true);
     },
@@ -175,7 +284,10 @@ var utility = function (profile) {
     populateValues: function populateValues(fromUpdate) {
       var dataObj = this.getDataObj();
       if (fromUpdate && $('.side-nav li:nth-child(2) .entry-grey').length) {
-        //don't redraw if grey
+        if (!dataObj.entryGrey) {
+          populateNetWorthValues(dataObj, $assetEl, $debtEl);
+          return;
+        }
         this.updateNetWorthValues(dataObj);
         drawLineGraph(true);
         return false;
@@ -228,7 +340,10 @@ var utility = function (profile) {
     },
     entryRowHtml: function entryRowHtml(entry) {
       var grey = entry.grey ? ' entry-grey' : '';
-      return '<a class="entry-row">' + '<span class="entry-label' + grey + '">' + entry.name + ' - <span class="entry-value ' + entry["class"] + '" style="font-size:12px;">' + entry.display + '</span></span>' + '<i class="material-icons entry-edit" title="Edit entry">mode_edit</i>' + '</a>';
+      var tags = entry.tags || [];
+      var tagsAttr = tags.length ? ' data-tags="' + tags.join(',') + '"' : '';
+      var tagsHtml = this.formatTagsHtml(tags, entry.grey);
+      return '<a class="entry-row"' + tagsAttr + '>' + '<span class="entry-row-main">' + '<span class="entry-label' + grey + '">' + entry.name + ' - <span class="entry-value ' + entry["class"] + '" style="font-size:12px;">' + entry.display + '</span></span>' + '<i class="material-icons entry-edit" title="Edit entry">mode_edit</i>' + '</span>' + tagsHtml + '</a>';
     },
     getDataObj: function getDataObj() {
       var refString = this.getReferenceStr(userData.currentMonth, userData.currentYear);

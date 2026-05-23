@@ -86,6 +86,12 @@ function modalModule(sources,options){
                         input('#value .validate'),
                         label('Value')
                       ])
+                    ]),
+                    div('.row',[
+                      div('.input-field .col .s12',[
+                        input('.entry-tags-input',{type:'text'}),
+                        label('Tags (comma-separated)')
+                      ])
                     ])
                   ])
                 ]) 
@@ -135,9 +141,10 @@ var addClick = (ev)=>{
       $modal = $(ev.currentTarget.closest('.modal'));
       $inputs = $modal.find('.modal-content input');
       $inputs.each((index,el)=>{
+        if(el.classList.contains('entry-tags-input')){
+          return;
+        }
         if(!el.value || el.value === 'Choose Entry Type'){
-          //temp = el.id || 'type';
-          //Materialize.toast((temp[0].toUpperCase() + temp.substring(1)) + ' is a required field.', 4000);
           invalid = true;
         }
         entry[el.id || 'type'] = el.value;
@@ -158,11 +165,12 @@ var addClick = (ev)=>{
       }
       else {        
         entry = utility.formatEntry(entry);
-        
-          //here//
+        entry.tags = utility.normalizeTags($modal.find('.entry-tags-input').val());
+        entry.grey = false;
         $('.'+entry.type.toLowerCase()).next().find('ul li').append(utility.entryRowHtml(entry));
-        $inputs[0].value = 'Choose Entry Type';
-        $inputs.filter(function(index){return index > 0;}).val('').next('label').removeClass('active');
+        $modal.find('select').val('Choose Entry Type').material_select();
+        $inputs.val('').next('label').removeClass('active');
+        $modal.find('.entry-tags-input').val('');
           
         utility.updateData(entry);
 
@@ -179,6 +187,9 @@ var updateClick = (ev)=>{
     $modal = $(ev.currentTarget.closest('.modal'));
     $inputs = $modal.find('.modal-content input');
     $inputs.each((index,el)=>{
+      if(el.classList.contains('entry-tags-input')){
+        return;
+      }
       if(!el.value || el.value === 'Choose Entry Type'){
         temp = el.id || 'type';
         Materialize.toast((temp[0].toUpperCase() + temp.substring(1)) + ' is a required field.', 4000);
@@ -186,11 +197,22 @@ var updateClick = (ev)=>{
       }
       entry[el.id || 'type'] = el.value;
     });
+    if(invalid){
+      return;
+    }
     entry = utility.formatEntry(entry);
-    var valueEl = $modal.data('item').querySelector('.entry-value');
+    entry.tags = utility.normalizeTags($modal.find('.entry-tags-input').val());
+    var item = $modal.data('item');
+    var valueEl = item.querySelector('.entry-value');
     if (valueEl) {
         valueEl.textContent = entry.display;
         valueEl.className = 'entry-value ' + entry.class;
+    }
+    item.setAttribute('data-tags', entry.tags.join(','));
+    item.querySelector('.entry-tags') && item.querySelector('.entry-tags').remove();
+    if(entry.tags.length){
+        var isGrey = item.querySelector('.entry-label').classList.contains('entry-grey');
+        $(item.querySelector('.entry-row-main')).after(utility.formatTagsHtml(entry.tags, isGrey));
     }
     utility.updateData(entry);
     $modal.closeModal();

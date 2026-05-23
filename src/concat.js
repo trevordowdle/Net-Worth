@@ -707,7 +707,9 @@ function modalModule(sources, options) {
   vtree$ = getEvents$.map(div([div(options.selector, [div('.modal-content', [h4(options.title), div('.row', [div('.col .s12', [div('.row', [div('.input-field .col .s12', [select('#entry', [option('Choose Entry Type'), option('Asset'), option('Debt')]), label('Entry Type')])]), div('.row', [div('.input-field .col .s6', [input('#name .validate', {
     type: 'text',
     disabled: options.disabled
-  }), label('Name')]), div('.input-field .col .s3', [input('#value .validate'), label('Value')])])])])]), div('.modal-footer', options.buttons.map(function (button) {
+  }), label('Name')]), div('.input-field .col .s3', [input('#value .validate'), label('Value')])]), div('.row', [div('.input-field .col .s12', [input('.entry-tags-input', {
+    type: 'text'
+  }), label('Tags (comma-separated)')])])])])]), div('.modal-footer', options.buttons.map(function (button) {
     var _float = button["float"] || '';
     return a(_float + button.selector + ' .waves-effect .waves-green .btn-flat', button.text);
   }))])]));
@@ -751,9 +753,10 @@ var addClick = function addClick(ev) {
   $modal = $(ev.currentTarget.closest('.modal'));
   $inputs = $modal.find('.modal-content input');
   $inputs.each(function (index, el) {
+    if (el.classList.contains('entry-tags-input')) {
+      return;
+    }
     if (!el.value || el.value === 'Choose Entry Type') {
-      //temp = el.id || 'type';
-      //Materialize.toast((temp[0].toUpperCase() + temp.substring(1)) + ' is a required field.', 4000);
       invalid = true;
     }
     entry[el.id || 'type'] = el.value;
@@ -771,13 +774,12 @@ var addClick = function addClick(ev) {
     console.log('invalid');
   } else {
     entry = utility.formatEntry(entry);
-
-    //here//
+    entry.tags = utility.normalizeTags($modal.find('.entry-tags-input').val());
+    entry.grey = false;
     $('.' + entry.type.toLowerCase()).next().find('ul li').append(utility.entryRowHtml(entry));
-    $inputs[0].value = 'Choose Entry Type';
-    $inputs.filter(function (index) {
-      return index > 0;
-    }).val('').next('label').removeClass('active');
+    $modal.find('select').val('Choose Entry Type').material_select();
+    $inputs.val('').next('label').removeClass('active');
+    $modal.find('.entry-tags-input').val('');
     utility.updateData(entry);
     $modal.closeModal();
   }
@@ -794,6 +796,9 @@ var updateClick = function updateClick(ev) {
   $modal = $(ev.currentTarget.closest('.modal'));
   $inputs = $modal.find('.modal-content input');
   $inputs.each(function (index, el) {
+    if (el.classList.contains('entry-tags-input')) {
+      return;
+    }
     if (!el.value || el.value === 'Choose Entry Type') {
       temp = el.id || 'type';
       Materialize.toast(temp[0].toUpperCase() + temp.substring(1) + ' is a required field.', 4000);
@@ -801,11 +806,22 @@ var updateClick = function updateClick(ev) {
     }
     entry[el.id || 'type'] = el.value;
   });
+  if (invalid) {
+    return;
+  }
   entry = utility.formatEntry(entry);
-  var valueEl = $modal.data('item').querySelector('.entry-value');
+  entry.tags = utility.normalizeTags($modal.find('.entry-tags-input').val());
+  var item = $modal.data('item');
+  var valueEl = item.querySelector('.entry-value');
   if (valueEl) {
     valueEl.textContent = entry.display;
     valueEl.className = 'entry-value ' + entry["class"];
+  }
+  item.setAttribute('data-tags', entry.tags.join(','));
+  item.querySelector('.entry-tags') && item.querySelector('.entry-tags').remove();
+  if (entry.tags.length) {
+    var isGrey = item.querySelector('.entry-label').classList.contains('entry-grey');
+    $(item.querySelector('.entry-row-main')).after(utility.formatTagsHtml(entry.tags, isGrey));
   }
   utility.updateData(entry);
   $modal.closeModal();
@@ -4976,7 +4992,9 @@ function sideNavModule(sources) {
     accordionToggle($target);
   }).startWith('');
   var getClickAdd$ = sources.DOM.select('.btn-floating.add').events('click').map(function (ev) {
-    $('#modal1').openModal();
+    var $modal = $('#modal1');
+    $modal.find('.entry-tags-input').val('').next('label').removeClass('active');
+    $modal.openModal();
   });
   var getClickEdit$ = sources.DOM.select('#sideNav').events('click').filter(function (ev) {
     return ev.target.closest && ev.target.closest('.entry-edit');
@@ -4999,6 +5017,11 @@ function sideNavModule(sources) {
     $('#modal2').find('select').val(itemType).material_select();
     $('#modal2').find('#name').val(infoItems[0]).next().addClass('active');
     $('#modal2').find('#value').val(infoItems[1]).next().addClass('active');
+    var entryTags = item.getAttribute('data-tags');
+    if (!entryTags) {
+      entryTags = utility.tagsToInputValue(utility.getTagsForDisplay(itemType, infoItems[0].trim(), utility.getDataObj()));
+    }
+    $('#modal2').find('.entry-tags-input').val(entryTags).next().addClass('active');
     $('#modal2').data("item", item);
     $('#modal2').openModal();
     ev.preventDefault();
@@ -5113,8 +5136,8 @@ function populateNetWorthValues(dataObj, $elAsset, $elDebt) {
     } else {
       networthHeader.style.opacity = 1;
     }
-    addValues(dataObj['Asset'], '$', 'Asset', $elAsset, dataObj.entryGrey);
-    addValues(dataObj['Debt'], '$', 'Debt', $elDebt, dataObj.entryGrey);
+    addValues(dataObj['Asset'], '$', 'Asset', $elAsset, dataObj);
+    addValues(dataObj['Debt'], '$', 'Debt', $elDebt, dataObj);
     dataObj.entryGrey = undefined;
   } else {
     //document.getElementById('chart_Asset').hidden = true;  
@@ -5216,16 +5239,16 @@ function drawGraph(obj, type) {
   el.hidden = false;
   chart.draw(data, options);
 }
-function addValues(valueObj, prefix, type, $el, entryGrey) {
+function addValues(valueObj, prefix, type, $el, dataObj) {
   if (valueObj) {
-    //debugger;
     Object.keys(valueObj).map(function (key) {
       var entry = utility.formatEntry({
         type: type,
         name: key,
         value: valueObj[key]
       });
-      entry.grey = entryGrey ? 'entry-grey' : '';
+      entry.grey = dataObj.entryGrey ? 'entry-grey' : '';
+      entry.tags = utility.getTagsForDisplay(type, key, dataObj);
       $el.append(utility.entryRowHtml(entry));
     });
   }
@@ -5366,10 +5389,102 @@ var utility = function (profile) {
       month = month < 10 ? '0' + month : month;
       return year + '' + month;
     },
+    getCurrentMonthRef: function getCurrentMonthRef() {
+      return this.getReferenceStr(userData.currentMonth, userData.currentYear);
+    },
+    getPreviousMonthRef: function getPreviousMonthRef(month, year) {
+      var tempMonth = (month !== undefined ? month : userData.currentMonth) - 1;
+      var tempYear = year !== undefined ? year : userData.currentYear;
+      if (tempMonth === 0) {
+        tempMonth = 12;
+        tempYear -= 1;
+      }
+      return this.getReferenceStr(tempMonth, tempYear);
+    },
+    normalizeTags: function normalizeTags(input) {
+      var list,
+        seen = {},
+        out = [],
+        i,
+        t;
+      if (!input) {
+        return [];
+      }
+      list = Array.isArray(input) ? input : String(input).split(',');
+      for (i = 0; i < list.length; i++) {
+        t = String(list[i]).trim().toLowerCase();
+        if (t && !seen[t]) {
+          seen[t] = true;
+          out.push(t);
+        }
+      }
+      return out.slice(0, 10);
+    },
+    tagsToInputValue: function tagsToInputValue(tags) {
+      return (tags || []).join(', ');
+    },
+    getTagsForEntry: function getTagsForEntry(monthRef, type, name) {
+      var month = userData.entries[monthRef];
+      var tags;
+      if (!month || !month.tags || !month.tags[type]) {
+        return [];
+      }
+      tags = month.tags[type][name];
+      return Array.isArray(tags) ? tags : [];
+    },
+    getTagsForDisplay: function getTagsForDisplay(type, name, dataObj) {
+      var currentRef = this.getCurrentMonthRef();
+      var currentTags = this.getTagsForEntry(currentRef, type, name);
+      if (currentTags.length) {
+        return currentTags;
+      }
+      if (dataObj && dataObj.entryGrey) {
+        return this.getTagsForEntry(this.getPreviousMonthRef(), type, name);
+      }
+      return [];
+    },
+    escapeHtml: function escapeHtml(str) {
+      return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    },
+    formatTagsHtml: function formatTagsHtml(tags, grey) {
+      var i,
+        cls,
+        html = '',
+        safe;
+      if (!tags || !tags.length) {
+        return '';
+      }
+      cls = grey ? 'entry-tag entry-tag-grey' : 'entry-tag';
+      html = '<span class="entry-tags">';
+      for (i = 0; i < tags.length; i++) {
+        safe = this.escapeHtml(tags[i]);
+        html += '<span class="' + cls + '">' + safe + '</span>';
+      }
+      html += '</span>';
+      return html;
+    },
+    syncEntryTagsLocal: function syncEntryTagsLocal(refDate, type, name, tags) {
+      if (!userData.entries[refDate]) {
+        userData.entries[refDate] = {};
+      }
+      if (!userData.entries[refDate].tags) {
+        userData.entries[refDate].tags = {};
+      }
+      if (!userData.entries[refDate].tags[type]) {
+        userData.entries[refDate].tags[type] = {};
+      }
+      if (tags.length) {
+        userData.entries[refDate].tags[type][name] = tags;
+      } else {
+        delete userData.entries[refDate].tags[type][name];
+      }
+    },
     updateData: function updateData(entry) {
       var updateObj = {},
         refDate = this.getReferenceStr(userData.currentMonth, userData.currentYear),
         refStr = 'entries/' + refDate,
+        tagPath,
+        normalizedTags,
         netWorthData;
       if (!userData.entries[refDate]) {
         userData.entries[refDate] = {};
@@ -5377,7 +5492,11 @@ var utility = function (profile) {
       if (!userData.entries[refDate][entry.type]) {
         userData.entries[refDate][entry.type] = {};
       }
-      userData.entries[refDate][entry.type][entry.name] = entry.value;
+      if (entry.value === null) {
+        userData.entries[refDate][entry.type][entry.name] = null;
+      } else {
+        userData.entries[refDate][entry.type][entry.name] = entry.value;
+      }
       netWorthData = this.getNetWorth(userData.entries[refDate]);
       if (netWorthData.Net !== null) {
         updateObj[refStr + '/NetWorth'] = parseFloat(netWorthData.Net).toFixed(2);
@@ -5389,6 +5508,19 @@ var utility = function (profile) {
         updateObj[refStr + '/Debts'] = null;
       }
       updateObj[refStr + '/' + entry.type + '/' + entry.name] = entry.value;
+      tagPath = refStr + '/tags/' + entry.type + '/' + entry.name;
+      if (entry.value === null) {
+        updateObj[tagPath] = null;
+        this.syncEntryTagsLocal(refDate, entry.type, entry.name, []);
+      } else if (entry.tags !== undefined) {
+        normalizedTags = this.normalizeTags(entry.tags);
+        if (normalizedTags.length) {
+          updateObj[tagPath] = normalizedTags;
+        } else {
+          updateObj[tagPath] = null;
+        }
+        this.syncEntryTagsLocal(refDate, entry.type, entry.name, normalizedTags);
+      }
       userDatabase.update(updateObj);
       utility.populateValues(true);
     },
@@ -5407,7 +5539,10 @@ var utility = function (profile) {
     populateValues: function populateValues(fromUpdate) {
       var dataObj = this.getDataObj();
       if (fromUpdate && $('.side-nav li:nth-child(2) .entry-grey').length) {
-        //don't redraw if grey
+        if (!dataObj.entryGrey) {
+          populateNetWorthValues(dataObj, $assetEl, $debtEl);
+          return;
+        }
         this.updateNetWorthValues(dataObj);
         drawLineGraph(true);
         return false;
@@ -5460,7 +5595,10 @@ var utility = function (profile) {
     },
     entryRowHtml: function entryRowHtml(entry) {
       var grey = entry.grey ? ' entry-grey' : '';
-      return '<a class="entry-row">' + '<span class="entry-label' + grey + '">' + entry.name + ' - <span class="entry-value ' + entry["class"] + '" style="font-size:12px;">' + entry.display + '</span></span>' + '<i class="material-icons entry-edit" title="Edit entry">mode_edit</i>' + '</a>';
+      var tags = entry.tags || [];
+      var tagsAttr = tags.length ? ' data-tags="' + tags.join(',') + '"' : '';
+      var tagsHtml = this.formatTagsHtml(tags, entry.grey);
+      return '<a class="entry-row"' + tagsAttr + '>' + '<span class="entry-row-main">' + '<span class="entry-label' + grey + '">' + entry.name + ' - <span class="entry-value ' + entry["class"] + '" style="font-size:12px;">' + entry.display + '</span></span>' + '<i class="material-icons entry-edit" title="Edit entry">mode_edit</i>' + '</span>' + tagsHtml + '</a>';
     },
     getDataObj: function getDataObj() {
       var refString = this.getReferenceStr(userData.currentMonth, userData.currentYear);
