@@ -128,9 +128,19 @@ function headerModule(sources){
 
     sources.DOM.select('.tag-filter-bar').events('click').subscribe(function(ev){
         var $target = $(ev.target).closest(
-            '.tag-filter-chip, .tag-filter-clear, .tag-filter-add-line, .tag-series-remove, .tag-series-negate'
+            '.tag-filter-chip, .tag-filter-clear, .tag-filter-add-line, .tag-series-remove, .tag-series-negate, .tag-filter-match-any, .tag-filter-match-all'
         );
         if(!$target.length){
+            return;
+        }
+        if($target.hasClass('tag-filter-match-any')){
+            utility.setProfileTagMatchMode('any');
+            refreshProfileView();
+            return;
+        }
+        if($target.hasClass('tag-filter-match-all')){
+            utility.setProfileTagMatchMode('all');
+            refreshProfileView();
             return;
         }
         if($target.hasClass('tag-filter-chip')){
@@ -216,9 +226,14 @@ function headerModule(sources){
                             button('.tag-filter-clear .btn-flat','Clear')
                         ])
                     ]),
-                    p('.tag-filter-hint .grey-text','Select tags to filter this month. Use Add line to save a comparison (then pick other tags for the next line).'),
+                    p('.tag-filter-hint .grey-text','Select tags to filter this month. Match mode applies to the filter and new comparison lines.'),
+                    div('.tag-filter-match-mode',[
+                        span('.tag-filter-match-label','Match:'),
+                        button('.tag-filter-match-any .btn-flat .active','Any tag'),
+                        button('.tag-filter-match-all .btn-flat','All tags')
+                    ]),
                     label('.tag-series-add-negate-wrap',[
-                        input('.tag-series-add-negate',{type:'checkbox',attributes:{checked:false}}),
+                        input('.tag-series-add-negate',{type:'checkbox'}),
                         span(' Flip sign for next line (invert positive/negative on chart)')
                     ]),
                     div('.tag-filter-chips'),
@@ -367,6 +382,15 @@ function renderTagFilterBar(){
     }
     $chips.html(html);
 
+    if(utility.getProfileTagMatchMode() === 'all'){
+        $bar.find('.tag-filter-match-any').removeClass('active');
+        $bar.find('.tag-filter-match-all').addClass('active');
+    }
+    else{
+        $bar.find('.tag-filter-match-all').removeClass('active');
+        $bar.find('.tag-filter-match-any').addClass('active');
+    }
+
     if(filter.length && utility.profileEdit && utility.getTagSeriesList().length < 5){
         $addLine.show();
         $negateWrap.show();
@@ -431,8 +455,8 @@ function addTagSeriesFromFilter(){
         profileToast('Select one or more tags first, then click Add line.');
         return;
     }
-    if(utility.findTagSeriesByTags(tags)){
-        profileToast('A line with these tags already exists.');
+    if(utility.findTagSeriesByTags(tags, utility.getProfileTagMatchMode())){
+        profileToast('A line with these tags and match mode already exists.');
         return;
     }
     if(utility.getTagSeriesList().length >= 5){
@@ -440,8 +464,8 @@ function addTagSeriesFromFilter(){
         return;
     }
 
-    label = tags.join(' + ');
-    id = utility.saveTagSeries(label, tags, $('.tag-series-add-negate').prop('checked'));
+    label = utility.defaultSeriesLabelForTags(tags, utility.getProfileTagMatchMode());
+    id = utility.saveTagSeries(label, tags, $('.tag-series-add-negate').prop('checked'), utility.getProfileTagMatchMode());
     if(!id){
         profileToast('Could not save this line.');
         return;
@@ -467,7 +491,9 @@ function renderTagSeriesList(){
     html = '<p class="tag-series-list-title">Comparison lines</p><ul class="tag-series-saved">';
     for(i = 0; i < seriesList.length; i++){
         s = seriesList[i];
-        html += '<li class="tag-series-item"><span class="tag-series-item-label">' + utility.escapeHtml(s.label) + '</span>';
+        html += '<li class="tag-series-item"><span class="tag-series-item-label">' + utility.escapeHtml(s.label) +
+            '</span> <span class="tag-series-match-label grey-text">(' +
+            (s.match === 'any' ? 'any tag' : 'all tags') + ')</span>';
         if(utility.profileEdit){
             html += ' <button type="button" class="tag-series-negate btn-flat' + (s.negate ? ' active' : '') +
                 '" data-id="' + utility.escapeHtml(s.id) + '">Flip sign</button>';
@@ -569,6 +595,7 @@ function drawLineGraph(ind, passedInTitle){
        title = passedInTitle || "Net Worth",
        graphMode = getLineGraphMode(passedInTitle),
        filterTags = utility.getProfileTagFilter(),
+       tagMatchMode = utility.getProfileTagMatchMode(),
        currentString = userData.keys[userData.lookup], 
        entryKeys = [],
        networthMonth, temp, val;
@@ -598,7 +625,7 @@ function drawLineGraph(ind, passedInTitle){
            month = utility.monthMap[parseInt(keyString.substring(4))],
            year = keyString.substring(0,4);
            networthMonth = month + " " + year;
-           val = utility.getFilteredLineValue(key, graphMode, filterTags);
+           val = utility.getFilteredLineValue(key, graphMode, filterTags, tagMatchMode);
            if(val === null){
                val = 0;
            }
@@ -622,7 +649,7 @@ function drawLineGraph(ind, passedInTitle){
         let options = {
         chart: {
           title: title + ' as of '+networthMonth,
-          subtitle: filterTags.length ? 'Tags: ' + filterTags.join(', ') : ''
+          subtitle: utility.formatTagFilterSubtitle(filterTags, tagMatchMode)
         },
         width: width,
         height: width/ratio
@@ -637,7 +664,8 @@ function drawLineGraph(ind, passedInTitle){
 
 function drawPieGraphs(){
     let rows = [], chart, el = document.getElementById('pie_chart1'), el2 = document.getElementById('pie_chart2'),
-    width, ratio = 2.2, filterTags = utility.getProfileTagFilter();
+    width, ratio = 2.2, filterTags = utility.getProfileTagFilter(),
+    tagMatchMode = utility.getProfileTagMatchMode();
 
     let currentString = userData.keys[userData.lookup];
 
@@ -652,7 +680,7 @@ function drawPieGraphs(){
     if(userData.entries[currentString] && userData.entries[currentString].Asset){
 
         rows = Object.keys(userData.entries[currentString].Asset).filter((key)=>{
-            return utility.entryMatchesTags(currentString, 'Asset', key, filterTags);
+            return utility.entryMatchesTags(currentString, 'Asset', key, filterTags, tagMatchMode);
         }).map((key)=>{
             return [key,parseFloat(userData.entries[currentString].Asset[key])];
         });
@@ -693,7 +721,7 @@ function drawPieGraphs(){
 
     if(userData.entries[currentString] && userData.entries[currentString].Debt){
         rows = Object.keys(userData.entries[currentString].Debt).filter((key)=>{
-            return utility.entryMatchesTags(currentString, 'Debt', key, filterTags);
+            return utility.entryMatchesTags(currentString, 'Debt', key, filterTags, tagMatchMode);
         }).map((key)=>{
             return [key,parseFloat(userData.entries[currentString].Debt[key])];
         });
@@ -719,7 +747,7 @@ function populateNetWorthGraph(dataObj){
             if(dataObj){
                 monthKey = userData.keys[userData.lookup];
                 filter = utility.getProfileTagFilter();
-                totals = utility.sumTaggedEntries(monthKey, filter);
+                totals = utility.sumTaggedEntries(monthKey, filter, utility.getProfileTagMatchMode());
 
                 updateView();
                 renderTagFilterBar();

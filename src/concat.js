@@ -5406,6 +5406,7 @@ var utility = function (profile) {
         if (!firstSnapshot) {
           firstSnapshot = true;
           userData.profileTagFilter = [];
+          userData.profileTagMatchMode = 'any';
           userData.displayName = data.displayName;
           userData.photoURL = data.photoURL;
           userData.keys = Object.keys(userData.entries);
@@ -5753,6 +5754,31 @@ var utility = function (profile) {
     setProfileTagFilter: function setProfileTagFilter(tags) {
       userData.profileTagFilter = this.normalizeTags(tags);
     },
+    getProfileTagMatchMode: function getProfileTagMatchMode() {
+      return userData.profileTagMatchMode === 'all' ? 'all' : 'any';
+    },
+    setProfileTagMatchMode: function setProfileTagMatchMode(mode) {
+      userData.profileTagMatchMode = mode === 'all' ? 'all' : 'any';
+    },
+    getSeriesMatchMode: function getSeriesMatchMode(series) {
+      if (series && series.match === 'any') {
+        return 'any';
+      }
+      if (series && series.match === 'all') {
+        return 'all';
+      }
+      return 'all';
+    },
+    formatTagFilterSubtitle: function formatTagFilterSubtitle(tags, matchMode) {
+      var joiner, modeLabel;
+      if (!tags || !tags.length) {
+        return '';
+      }
+      matchMode = matchMode === 'all' ? 'all' : 'any';
+      joiner = matchMode === 'all' ? ' + ' : ' | ';
+      modeLabel = matchMode === 'all' ? 'all tags' : 'any tag';
+      return 'Tags (' + modeLabel + '): ' + tags.join(joiner);
+    },
     getAllTags: function getAllTags() {
       var tagMap = {},
         sorted = [],
@@ -5795,12 +5821,21 @@ var utility = function (profile) {
       sorted.sort();
       return sorted;
     },
-    entryMatchesTags: function entryMatchesTags(monthRef, type, name, filterTags) {
+    entryMatchesTags: function entryMatchesTags(monthRef, type, name, filterTags, matchMode) {
       var entryTags, i;
       if (!filterTags || !filterTags.length) {
         return true;
       }
       entryTags = this.getTagsForEntry(monthRef, type, name);
+      matchMode = matchMode === 'all' ? 'all' : 'any';
+      if (matchMode === 'any') {
+        for (i = 0; i < filterTags.length; i++) {
+          if (entryTags.indexOf(filterTags[i]) >= 0) {
+            return true;
+          }
+        }
+        return false;
+      }
       for (i = 0; i < filterTags.length; i++) {
         if (entryTags.indexOf(filterTags[i]) < 0) {
           return false;
@@ -5808,7 +5843,7 @@ var utility = function (profile) {
       }
       return true;
     },
-    sumTaggedEntries: function sumTaggedEntries(monthRef, filterTags) {
+    sumTaggedEntries: function sumTaggedEntries(monthRef, filterTags, matchMode) {
       var month = userData.entries[monthRef],
         types = ['Asset', 'Debt'],
         assets = 0,
@@ -5861,7 +5896,7 @@ var utility = function (profile) {
           if (val === null || val === undefined) {
             continue;
           }
-          if (!this.entryMatchesTags(monthRef, type, name, filterTags)) {
+          if (!this.entryMatchesTags(monthRef, type, name, filterTags, matchMode)) {
             continue;
           }
           val = parseFloat(val);
@@ -5886,8 +5921,8 @@ var utility = function (profile) {
         filtered: true
       };
     },
-    getFilteredLineValue: function getFilteredLineValue(monthRef, graphMode, filterTags) {
-      var sum = this.sumTaggedEntries(monthRef, filterTags);
+    getFilteredLineValue: function getFilteredLineValue(monthRef, graphMode, filterTags, matchMode) {
+      var sum = this.sumTaggedEntries(monthRef, filterTags, matchMode || this.getProfileTagMatchMode());
       if (!sum.filtered) {
         var month = userData.entries[monthRef];
         if (!month) {
@@ -5921,7 +5956,8 @@ var utility = function (profile) {
           id: id,
           label: raw[id].label || id,
           tags: this.normalizeTags(raw[id].tags || []),
-          negate: !!raw[id].negate
+          negate: !!raw[id].negate,
+          match: raw[id].match === 'any' ? 'any' : 'all'
         });
       }
       list.sort(function (a, b) {
@@ -5929,38 +5965,42 @@ var utility = function (profile) {
       });
       return list;
     },
-    seriesTagsKey: function seriesTagsKey(tags) {
-      return this.normalizeTags(tags).slice().sort().join('|');
+    seriesTagsKey: function seriesTagsKey(tags, matchMode) {
+      var match = matchMode === 'all' ? 'all' : 'any';
+      return match + '::' + this.normalizeTags(tags).slice().sort().join('|');
     },
-    findTagSeriesByTags: function findTagSeriesByTags(tags) {
-      var key = this.seriesTagsKey(tags),
+    findTagSeriesByTags: function findTagSeriesByTags(tags, matchMode) {
+      var key = this.seriesTagsKey(tags, matchMode),
         list = this.getTagSeriesList(),
         i;
       for (i = 0; i < list.length; i++) {
-        if (this.seriesTagsKey(list[i].tags) === key) {
+        if (this.seriesTagsKey(list[i].tags, list[i].match) === key) {
           return list[i];
         }
       }
       return null;
     },
-    saveTagSeries: function saveTagSeries(label, tags, negate) {
+    saveTagSeries: function saveTagSeries(label, tags, negate, matchMode) {
       var normalized = this.normalizeTags(tags),
         ref,
         id,
-        payload;
+        payload,
+        match;
       if (!label || !normalized.length) {
         return null;
       }
       if (this.getTagSeriesList().length >= 5) {
         return null;
       }
-      if (this.findTagSeriesByTags(normalized)) {
+      match = matchMode === 'all' ? 'all' : 'any';
+      if (this.findTagSeriesByTags(normalized, match)) {
         return null;
       }
       payload = {
         label: label,
         tags: normalized,
-        negate: !!negate
+        negate: !!negate,
+        match: match
       };
       ref = userDatabase.child('tagSeries').push();
       id = ref.key;
@@ -5985,7 +6025,7 @@ var utility = function (profile) {
       }
     },
     monthHasTaggedSeriesData: function monthHasTaggedSeriesData(monthRef, series) {
-      return this.sumTaggedEntries(monthRef, series.tags).matches.length > 0;
+      return this.sumTaggedEntries(monthRef, series.tags, this.getSeriesMatchMode(series)).matches.length > 0;
     },
     getSeriesChartMonthKeys: function getSeriesChartMonthKeys(seriesList, endMonthKey) {
       var keys = [],
@@ -6016,7 +6056,7 @@ var utility = function (profile) {
     },
     getSeriesLineValue: function getSeriesLineValue(monthKey, graphMode, series) {
       var sum, val;
-      sum = this.sumTaggedEntries(monthKey, series.tags);
+      sum = this.sumTaggedEntries(monthKey, series.tags, this.getSeriesMatchMode(series));
       if (!sum.matches.length) {
         return null;
       }
@@ -6031,6 +6071,13 @@ var utility = function (profile) {
         val = -val;
       }
       return val;
+    },
+    defaultSeriesLabelForTags: function defaultSeriesLabelForTags(tags, matchMode) {
+      var normalized = this.normalizeTags(tags);
+      if (!normalized.length) {
+        return '';
+      }
+      return matchMode === 'all' ? normalized.join(' + ') : normalized.join(' | ');
     },
     buildSeriesChartRows: function buildSeriesChartRows(seriesList, graphMode, endMonthKey) {
       var keys, ki, header, rows, monthKey, monthLabel, row, si, val;

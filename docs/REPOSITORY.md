@@ -176,6 +176,7 @@ Each user’s data lives at:
       label: string
       tags: string[]
       negate: boolean             # when true, series value is multiplied by -1 (flip sign)
+      match: "any" | "all"        # optional; any = OR, all = AND (omitted on old lines → AND)
 ```
 
 **Month key format:** `utility.getReferenceStr(month, year)` → `year + zeroPaddedMonth` (e.g. `2016` + `12` → `"201612"`).
@@ -186,7 +187,7 @@ Each user’s data lives at:
 
 **Tag normalization:** `utility.normalizeTags()` — lowercase, trim, dedupe; comma-separated input in modals.
 
-**Filter semantics:** Profile filter and each comparison series use **AND** — an entry must have **all** selected tags to match.
+**Filter semantics (profile):** Default **OR** (`any`) — entry matches if it has **any** selected tag. Toggle **All tags** (`all`) for **AND** (must have every selected tag). Comparison series store their own `match` field (`any` | `all`); lines saved before this field default to **all** (AND).
 
 Firebase config (including `apiKey`) is in `js/utility.js`—standard for client Firebase apps; security rules are not in this repo.
 
@@ -211,7 +212,7 @@ Feature plan was split into four phases; **Phases 1–3 are implemented** and ma
 
 | Area | Behavior |
 |------|----------|
-| **Filter bar** | All tags ever used (`getAllTags`); click chips to toggle; **Clear** resets |
+| **Filter bar** | All tags ever used (`getAllTags`); click chips to toggle; **Any tag** / **All tags** match mode (default **Any**); **Clear** resets tags only |
 | **Totals** | Assets / Debts / Net Worth summary row uses `sumTaggedEntries` when filter active |
 | **Main line chart** | `getFilteredLineValue` per month through selected end month |
 | **Pie charts** | Only matching entries |
@@ -254,7 +255,7 @@ Not required for core tagging workflows. Consider only if a specific pain point 
 |------|-------------|--------|
 | **Tag autocomplete** | Suggest existing tags while typing in dashboard modal | `getAllTags()` already scans history; wire to modal input |
 | **Rename / tag merge** | Fix typos or merge `stock` + `stocks` across entries | Tags keyed by entry **name** today; rename = new key (same as values) |
-| **OR filter mode** | Match any selected tag instead of AND | Would need `match: "any"` on filter + series; data model noted in original plan |
+| ~~**OR filter mode**~~ | Implemented: profile default **any**; per-series `match` in Firebase | Toggle on filter bar; old series without `match` behave as **all** |
 | **Export / share** | Export comparison CSV or `profile/?user=&tags=` deep link | Read-only share already via `?user=`; tag filter is session-only today |
 | **Materialize on profile** | Load Materialize JS on profile for toasts | Currently `profileToast()` → `alert` |
 | **Firebase rules docs** | Document or tighten rules for `tags` arrays and `tagSeries` | Rules not versioned in repo |
