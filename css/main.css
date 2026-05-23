@@ -101,6 +101,43 @@ nav {
     letter-spacing: .5px;
 }
 
+/* Per-row edit control (sidebar asset/debt entries) */
+.side-nav .collapsible-body li a.entry-row {
+  position: relative;
+  display: block;
+  padding-right: 2rem;
+}
+
+.side-nav .entry-edit {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 1;
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+
+.side-nav a.entry-row:hover .entry-edit,
+.side-nav a.entry-row:focus-within .entry-edit {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.side-nav .entry-edit:hover {
+  color: #4caf50 !important;
+}
+
+/* Touch devices: keep edit control reachable without hover */
+@media (hover: none) {
+  .side-nav .entry-edit {
+    opacity: 0.85;
+    pointer-events: auto;
+  }
+}
+
 .edit {
   z-index:1000;
   position:absolute;

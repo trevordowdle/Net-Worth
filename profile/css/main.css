@@ -22,8 +22,11 @@
 }
 
 .profileImg {
-    width:100px;
-    border-radius:50%;
+    width: 100px;
+    height: 100px;
+    max-width: 100px;
+    object-fit: cover;
+    border-radius: 50%;
     position: absolute;
     top: 70px;
 }

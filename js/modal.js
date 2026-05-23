@@ -160,7 +160,7 @@ var addClick = (ev)=>{
         entry = utility.formatEntry(entry);
         
           //here//
-        $('.'+entry.type.toLowerCase()).next().find('ul li').append('<a><span style="pointer-events:none;">' + entry.name + ' - <span style="font-size:12px;pointer-events: none;" class="'+entry.class+'">' + entry.display + '</span></span></a>');
+        $('.'+entry.type.toLowerCase()).next().find('ul li').append(utility.entryRowHtml(entry));
         $inputs[0].value = 'Choose Entry Type';
         $inputs.filter(function(index){return index > 0;}).val('').next('label').removeClass('active');
           
@@ -187,8 +187,11 @@ var updateClick = (ev)=>{
       entry[el.id || 'type'] = el.value;
     });
     entry = utility.formatEntry(entry);
-    $modal.data('item').children[0].className = '';
-    $modal.data('item').children[0].children[0].innerText = entry.display;
+    var valueEl = $modal.data('item').querySelector('.entry-value');
+    if (valueEl) {
+        valueEl.textContent = entry.display;
+        valueEl.className = 'entry-value ' + entry.class;
+    }
     utility.updateData(entry);
     $modal.closeModal();
     //Materialize.toast('Update', 4000);
@@ -203,19 +206,11 @@ var removeClick = (ev)=>{
     });
     entry = utility.formatEntry(entry);
     element = $modal.data('item');
-    moveEdit(element);
     element.parentNode.removeChild(element);
     entry.value = null;
     utility.updateData(entry);
     $modal.closeModal();
     //Materialize.toast('Remove', 4000);
-};
-
-var moveEdit = (element)=>{
-    let edit = element.getElementsByClassName('edit');
-    if(edit.length){
-        element.parentElement.parentElement.appendChild(edit[0]);    
-    }
 };
 
 

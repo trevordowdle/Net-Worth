@@ -3,26 +3,6 @@ function sideNavModule(sources){
 
   let vtree$;
 
-  let getMouseLeave$ = sources.DOM.select('.collapsible-body ul li a').events('mouseenter').map(ev => {
-      return ev;
-  });
-
-  let getMouseEnter$ = sources.DOM.select('.collapsible-body ul li a').events('mouseleave').map(ev => {
-      return ev;
-  });
-
-  getMouseLeave$.merge(getMouseEnter$).subscribe((ev)=>{
-      let el$ = $(ev.currentTarget);
-      if(ev.type === 'mouseenter'){
-        el$.append($('.edit').removeClass('hide'));
-      }
-      if(ev.type === 'mouseleave'){
-            if(ev.fromElement.className !== 'material-icons edit'){
-                $('.edit').addClass('hide');
-            }
-      }
-  });
-    
   let getClickSideBar$ = sources.DOM.select('.collapsible-header').events('click').map(ev => {
     let $target = $(ev.currentTarget);
     $target.toggleClass('active');
@@ -33,11 +13,14 @@ function sideNavModule(sources){
     $('#modal1').openModal();     
   });
 
-  let getClickEdit$ = sources.DOM.select('.material-icons.edit').events('click').map(ev => {
-      let item = ev.currentTarget.parentElement,
+  let getClickEdit$ = sources.DOM.select('#sideNav').events('click')
+      .filter(function (ev) {
+          return ev.target.closest && ev.target.closest('.entry-edit');
+      })
+      .map(function (ev) {
+      let item = ev.target.closest('a.entry-row'),
       infoItems, itemType, index,
-      itemClass = item.parentElement.className,
-      modal2 = $('#modal2');
+      itemClass = item.parentElement.className;
       if(itemClass.indexOf('asset-items') >= 0){
           itemType = 'Asset';
           index = 1;
@@ -46,15 +29,17 @@ function sideNavModule(sources){
           itemType = 'Debt';
           index = 1;
       }
-      infoItems = item.firstChild.innerText.split(' - ');
-      infoItems[1] = infoItems[1]/*.replace(/,/g, "")*/.substring(index);
+      infoItems = item.querySelector('.entry-label').innerText.split(' - ');
+      infoItems[1] = infoItems[1].substring(index);
 
       $('#modal2').find('select')[0].disabled = true;
       $('#modal2').find('select').val(itemType).material_select();
       $('#modal2').find('#name').val(infoItems[0]).next().addClass('active');
       $('#modal2').find('#value').val(infoItems[1]).next().addClass('active');
       $('#modal2').data("item",item);
-      $('#modal2').openModal();     
+      $('#modal2').openModal();
+      ev.preventDefault();
+      ev.stopPropagation();
   });
     
   let getClicks$ = getClickSideBar$.merge(getClickAdd$).merge(getClickEdit$);
@@ -82,7 +67,7 @@ function sideNavModule(sources){
   let clickProfile$ = sources.DOM.select('#profile')
                   .events('click')
                   .subscribe((ev)=>{
-                      location.href = "profile";
+                      location.href = utility.appUrl('profile');
                   });
     
   vtree$ = getClicks$.map(()=>
@@ -123,8 +108,7 @@ function sideNavModule(sources){
                   ]),
                   a('.button-collapse',{attributes:{'data-activates':'nav-mobile'},style:{position:'absolute',top:'5px',left:'5px',color:'white',cursor:'pointer'}},[
                       i('.material-icons','menu')
-                  ]),
-                  i('.material-icons .edit .hide','mode_edit') // to do give this background and waves
+                  ])
                 ])
       );
     
@@ -145,7 +129,6 @@ function accordionToggle(object) {
 
 function populateNetWorthValues(dataObj,$elAsset,$elDebt){
     let networthHeader, networthInfo;
-    moveEdit($elAsset.closest('.collapsible-accordion')[0]);
     $elAsset.empty();
     $elDebt.empty();
     networthInfo = document.getElementsByClassName('networth-info')[0];
@@ -305,9 +288,9 @@ function addValues(valueObj,prefix,type,$el,entryGrey){
     if(valueObj){
     //debugger;
         Object.keys(valueObj).map(function(key){
-            let entry = utility.formatEntry({type:type,value:valueObj[key]});
+            let entry = utility.formatEntry({type:type,name:key,value:valueObj[key]});
             entry.grey = entryGrey ? 'entry-grey' : '';
-            $el.append('<a><span class="' + entry.grey + '" style="pointer-events:none;">' + key + ' - <span style="font-size:12px;pointer-events: none;" class="'+entry.class+'">' + entry.display + '</span></span></a>');
+            $el.append(utility.entryRowHtml(entry));
         });
         
     }

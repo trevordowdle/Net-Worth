@@ -2,8 +2,16 @@
 <!DOCTYPE html>
 <html>
  <head>
+    <script>
+      (function () {
+        var p = location.pathname;
+        if (p.slice(-8) === '/profile' && !p.endsWith('/profile/')) {
+          location.replace(p + '/' + location.search + location.hash);
+        }
+      })();
+    </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.97.7/css/materialize.min.css">
-    <link href="css/main.css" rel="stylesheet">
+    <link href="./css/main.css" rel="stylesheet">
     <meta name="description" content="Cycle.js HTTP">
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>

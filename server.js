@@ -2,66 +2,91 @@ var http = require('http');
 var fs = require('fs');
 var path = require('path');
 
-http.createServer(function (request, response) {
-    console.log('request starting...');
-    var filePath = '.' + request.url,
-        extname;
-    
-    if(filePath.indexOf('?') > -1){
-        filePath = filePath.substring(0,filePath.indexOf('?'));
+var PORT = process.env.PORT || 3000;
+
+function resolveFilePath(requestUrl) {
+    var urlPath = requestUrl.split('?')[0];
+    var filePath = '.' + urlPath;
+
+    // GitHub Pages serves from /Net-Worth/; map those URLs to repo root paths locally
+    if (filePath.indexOf('./Net-Worth/') === 0) {
+        filePath = '.' + filePath.slice('./Net-Worth'.length);
     }
-    //console.log(filePath);
-    if (filePath == './' || filePath == './Net-Worth')
-        filePath = './index.html';
 
-    if (filePath == './Net-Worth/profile')
-        filePath = './profile/index.html';
-    
+    if (filePath === './' || filePath === './index.html') {
+        return './index.html';
+    }
+    if (filePath === './Net-Worth' || filePath === './Net-Worth/') {
+        return './index.html';
+    }
+    if (filePath === './profile' || filePath === './profile/') {
+        return './profile/index.html';
+    }
 
-    extname = path.extname(filePath);
-    var contentType = 'text/html';
-    switch (extname) {
+    if (!path.extname(filePath) && fs.existsSync(filePath + '/index.html')) {
+        return filePath + '/index.html';
+    }
+
+    return filePath;
+}
+
+function redirectWithSlash(request, response, urlPath) {
+    var query = request.url.indexOf('?') >= 0 ? request.url.slice(request.url.indexOf('?')) : '';
+    response.writeHead(301, { Location: urlPath + '/' + query });
+    response.end();
+}
+
+function contentTypeFor(filePath) {
+    switch (path.extname(filePath)) {
         case '.js':
-            contentType = 'text/javascript';
-            break;
+            return 'text/javascript';
         case '.css':
-            contentType = 'text/css';
-            break;
+            return 'text/css';
         case '.json':
-            contentType = 'application/json';
-            break;
+            return 'application/json';
         case '.png':
-            contentType = 'image/png';
-            break;      
+            return 'image/png';
         case '.jpg':
-            contentType = 'image/jpg';
-            break;
+        case '.jpeg':
+            return 'image/jpeg';
         case '.wav':
-            contentType = 'audio/wav';
-            break;
+            return 'audio/wav';
+        default:
+            return 'text/html';
+    }
+}
+
+http.createServer(function (request, response) {
+    var urlPath = request.url.split('?')[0];
+
+    // /profile and /Net-Worth/profile must end with / so relative css/main.css resolves correctly
+    if (urlPath === '/profile' || urlPath === '/Net-Worth/profile') {
+        redirectWithSlash(request, response, urlPath);
+        return;
     }
 
-    fs.readFile(filePath, function(error, content) {
-        //console.log(error);
-        //console.log(content);
-        if (error) {
-            if(error.code == 'ENOENT'){
-                fs.readFile('./404.html', function(error, content) {
-                    response.writeHead(200, { 'Content-Type': contentType });
-                    response.end(content, 'utf-8');
-                });
-            }
-            else {
-                response.writeHead(500);
-                response.end('Sorry, check with the site admin for error: '+error.code+' ..\n');
-                response.end(); 
-            }
-        }
-        else {
-            response.writeHead(200, { 'Content-Type': contentType });
-            response.end(content, 'utf-8');
-        }
-    });
+    var filePath = resolveFilePath(request.url);
+    var contentType = contentTypeFor(filePath);
 
-}).listen(7000);
-console.log('Server running at http://localhost:7000/');
+    fs.readFile(filePath, function (error, content) {
+        if (error) {
+            if (error.code === 'ENOENT') {
+                response.writeHead(404, { 'Content-Type': 'text/html' });
+                response.end(
+                    '<!DOCTYPE html><html><body><h1>404</h1><p>Not found: ' +
+                    request.url +
+                    '</p></body></html>',
+                    'utf-8'
+                );
+                return;
+            }
+            response.writeHead(500);
+            response.end('Server error: ' + error.code + '\n');
+            return;
+        }
+        response.writeHead(200, { 'Content-Type': contentType });
+        response.end(content, 'utf-8');
+    });
+}).listen(PORT);
+
+console.log('Server running at http://localhost:' + PORT + '/');

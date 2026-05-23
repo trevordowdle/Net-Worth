@@ -45,6 +45,25 @@ var utility = function(profile){
           12: 'December'
         },
         profileEdit:true,
+        getAppBasePath:function(){
+            var path = location.pathname;
+            if (path.length > 1 && path.charAt(path.length - 1) === '/') {
+                path = path.slice(0, -1);
+            }
+            if (path.slice(-8) === '/profile') {
+                return path.slice(0, -8) || '';
+            }
+            return path === '/' ? '' : path;
+        },
+        appUrl:function(suffix){
+            var base = this.getAppBasePath();
+            var path = (suffix || '').replace(/^\//, '').replace(/\/$/, '');
+            if (!path) {
+                return base ? base + '/' : '/';
+            }
+            // Trailing slash so profile/css/main.css resolves (not /css/main.css)
+            return (base ? base + '/' : '/') + path + '/';
+        },
         setDatabase:function(uid){
             userDatabase = firebase.database().ref(uid);    
         },
@@ -206,6 +225,14 @@ var utility = function(profile){
             entry.display = entry.prefix + entry.value.toLocaleString(undefined, {maximumFractionDigits: fractionIndicator, minimumFractionDigits: fractionIndicator});
 
             return entry;    
+        },
+        entryRowHtml(entry) {
+            var grey = entry.grey ? ' entry-grey' : '';
+            return '<a class="entry-row">' +
+                '<span class="entry-label' + grey + '">' +
+                entry.name + ' - <span class="entry-value ' + entry.class + '" style="font-size:12px;">' + entry.display + '</span></span>' +
+                '<i class="material-icons entry-edit" title="Edit entry">mode_edit</i>' +
+                '</a>';
         },
         getDataObj(){
              let refString = this.getReferenceStr(userData.currentMonth,userData.currentYear);

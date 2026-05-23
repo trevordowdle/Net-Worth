@@ -76,12 +76,12 @@ function headerModule(sources){
     });
 
     let networthClick$ = sources.DOM.select('.brand-logo').events('click').subscribe(function(ev){
-        location.href = "/Net-Worth";
+        location.href = utility.appUrl();
     });
 
     sources.DOM.select('.logout').events('click').subscribe(function(ev){
         firebase.auth().signOut();
-        location.href = "/Net-Worth";
+        location.href = utility.appUrl();
     });
 
     let getMouseLeave$ = sources.DOM.select('.nav .nav-wrapper .name').events('mouseenter').map(ev => {
@@ -243,10 +243,8 @@ function mainModule(sources){
 let initApp = function() {
 
     var userLookup, index, doc = document;
-    index = location.href.indexOf('user=');
-    if(index >= 0){
-        userLookup = location.href.substring(index+5);
-    }
+    var params = new URLSearchParams(location.search);
+    userLookup = params.get('user');
 
     firebase.auth().onAuthStateChanged(function(user) {
         if(userLookup){
@@ -259,9 +257,14 @@ let initApp = function() {
         else if (user) {
             utility.setDatabase(user.uid);
             Cycle.run(page, drivers);
-            history.replaceState('', 'Net Worth Profile', location.href + '?user='+user.uid);
+            params.set('user', user.uid);
+            var profilePath = location.pathname;
+            if (profilePath.slice(-8) === '/profile') {
+                profilePath += '/';
+            }
+            history.replaceState('', 'Net Worth Profile', profilePath + '?' + params.toString());
         } else {
-            location.href = "/Net-Worth";    
+            location.href = utility.appUrl();
         }
     }, function(error) {
         console.log(error);
