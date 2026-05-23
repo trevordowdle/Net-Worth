@@ -103,8 +103,13 @@ Shareable/historical view for a user:
 
 - Loads `../src/uglifyProfile.js` (built from `js/utility.js` + `profile/js/main.js`).
 - Auth: requires `?user={uid}` in URL **or** signed-in user (then URL is updated via `history.replaceState`).
-- Month navigation (arrows), toggle Net Worth / Assets / Debts line charts, asset/debt pie charts.
-- Viewing another user’s profile (`?user=` without matching login) sets `utility.profileEdit = false` (read-only; no name edit, logout hidden).
+- Month navigation (arrows), toggle **Net Worth / Assets / Debts** (applies to main line chart, pies, and comparison chart).
+- **Tag filter bar** (when any tags exist): multi-select chips (AND), filtered totals, matching-entry list, **Add line** for saved comparison series.
+- **Comparison chart**: multi-line Google Chart for up to 5 saved tag series; zoomed to months where at least one series has matches.
+- Asset/debt pie charts and main line chart respect the active tag filter when tags are selected.
+- Header: overlapping profile photo + display name; `utility.applyProfilePhoto()` resolves URLs for GitHub Pages paths and Google avatars.
+- Viewing another user’s profile (`?user=` without matching login) sets `utility.profileEdit = false` (read-only; no name edit, logout hidden, no add/remove series or flip-sign).
+- **Note:** Profile HTML does not load Materialize JS; feedback uses `profileToast()` (`alert` fallback), not `Materialize.toast`.
 
 ### 3. Login (`login.js`)
 
@@ -151,7 +156,7 @@ Each user’s data lives at:
 ```
 /{firebaseAuthUid}/
   displayName: string (optional)
-  photoURL: string (optional)
+  photoURL: string (optional)     # often synced from Firebase Auth on main app login
   entries/
     {YYYYMM}/          # e.g. "201612" = December 2016
       Asset/
@@ -161,15 +166,102 @@ Each user’s data lives at:
       NetWorth: number | null    # computed on write
       Assets: number | null
       Debts: number | null
+      tags/                      # parallel to Asset/Debt (Phase 1)
+        Asset/
+          {name}: string[]       # e.g. ["stock", "non-retirement"]
+        Debt/
+          {name}: string[]
+  tagSeries/                     # saved comparison lines (Phase 3)
+    {pushId}/
+      label: string
+      tags: string[]
+      negate: boolean             # when true, series value is multiplied by -1 (flip sign)
 ```
 
 **Month key format:** `utility.getReferenceStr(month, year)` → `year + zeroPaddedMonth` (e.g. `2016` + `12` → `"201612"`).
 
-**Writes:** `utility.updateData(entry)` merges asset/debt line items, recomputes totals via `getNetWorth()`, and `userDatabase.update(updateObj)` with paths like `entries/201612/Asset/Savings`.
+**Writes:** `utility.updateData(entry)` merges asset/debt line items, optional `entry.tags`, recomputes totals via `getNetWorth()`, and `userDatabase.update(updateObj)` with paths like `entries/201612/Asset/Savings` and `entries/201612/tags/Asset/Savings`.
 
-**Reads:** `watchData` keeps `userData.entries` in sync; `getDataObj()` picks the current carousel month, falls back to previous month if current has no `NetWorth` (shown greyed via `entryGrey`).
+**Reads:** `watchData` keeps `userData.entries` in sync; `watchDataProfile` also loads `tagSeries`. `getDataObj()` picks the current carousel month, falls back to previous month if current has no `NetWorth` (shown greyed via `entryGrey`).
+
+**Tag normalization:** `utility.normalizeTags()` — lowercase, trim, dedupe; comma-separated input in modals.
+
+**Filter semantics:** Profile filter and each comparison series use **AND** — an entry must have **all** selected tags to match.
 
 Firebase config (including `apiKey`) is in `js/utility.js`—standard for client Firebase apps; security rules are not in this repo.
+
+---
+
+## Tags and profile analysis (Phases 1–3)
+
+Feature plan was split into four phases; **Phases 1–3 are implemented** and match current personal use. Phase 4 is optional polish only (see below).
+
+### Phase 1 — Dashboard tags (foundation)
+
+| Area | Behavior |
+|------|----------|
+| **Add/Edit modal** | Comma-separated tags field; saved on `updateData` |
+| **Sidebar rows** | Tag chips under each entry (`utility.entryRowHtml`, `formatTagsHtml`) |
+| **Grey month** | If current month has no data, previous month’s values/tags display grey; first save copies tags into current month (same as values) |
+| **Remove entry** | Clears value and `tags/{type}/{name}` |
+
+**Key APIs:** `getTagsForEntry`, `getTagsForDisplay`, `syncEntryTagsLocal`, `tagsToInputValue`.
+
+### Phase 2 — Profile tag filter
+
+| Area | Behavior |
+|------|----------|
+| **Filter bar** | All tags ever used (`getAllTags`); click chips to toggle; **Clear** resets |
+| **Totals** | Assets / Debts / Net Worth summary row uses `sumTaggedEntries` when filter active |
+| **Main line chart** | `getFilteredLineValue` per month through selected end month |
+| **Pie charts** | Only matching entries |
+| **Matching list** | Shows entries included for the navigated month |
+
+Session filter state: `userData.profileTagFilter` (not persisted to Firebase).
+
+### Phase 3 — Comparison lines (multi-series chart)
+
+| Area | Behavior |
+|------|----------|
+| **Add line** | Select tags in filter bar → optional “Flip sign” checkbox → **Add line** (auto-label from tags if no custom name); clears filter for next line |
+| **Limit** | Up to **5** series; duplicate tag sets rejected (`findTagSeriesByTags`) |
+| **Persist** | `tagSeries/{id}` in Firebase |
+| **Chart** | `buildSeriesChartRows` / `drawTagSeriesChart`; **Net Worth / Assets / Debts** tabs apply to each series via `getSeriesLineValue` |
+| **Date range** | `getSeriesChartMonthKeys` — only months where at least one series has tagged matches (no flat zero stretch across full history) |
+| **Flip sign** | `negate: true` → `val = -val` (true sign flip, not `-Math.abs`) |
+| **Edit mode** | **Flip sign** / **Remove** on each line when `utility.profileEdit` is true |
+
+**Key APIs:** `getTagSeriesList`, `saveTagSeries`, `setTagSeriesNegate`, `removeTagSeries`, `monthHasTaggedSeriesData`.
+
+**UI files:** `profile/js/main.js` (filter bar, series list, chart row), `profile/css/main.css` (`.tag-filter-*`, `.tag-series-*`).
+
+### Path helpers (local vs GitHub Pages)
+
+| Function | Purpose |
+|----------|---------|
+| `getAppBasePath()` | Strips `/profile` from pathname; returns `''` or `/Net-Worth` |
+| `appUrl(suffix)` | Directory URLs with trailing slash (e.g. `profile/`) |
+| `assetUrl(suffix)` | Static files without trailing slash (e.g. `img/anony.jpg`) |
+| `resolvePhotoURL` / `applyProfilePhoto` | Profile avatar: DB URL, Auth fallback, relative path fix, `referrerpolicy="no-referrer"` |
+
+---
+
+## Phase 4 — optional polish (future reference)
+
+Not required for core tagging workflows. Consider only if a specific pain point appears.
+
+| Idea | Description | Notes |
+|------|-------------|--------|
+| **Tag autocomplete** | Suggest existing tags while typing in dashboard modal | `getAllTags()` already scans history; wire to modal input |
+| **Rename / tag merge** | Fix typos or merge `stock` + `stocks` across entries | Tags keyed by entry **name** today; rename = new key (same as values) |
+| **OR filter mode** | Match any selected tag instead of AND | Would need `match: "any"` on filter + series; data model noted in original plan |
+| **Export / share** | Export comparison CSV or `profile/?user=&tags=` deep link | Read-only share already via `?user=`; tag filter is session-only today |
+| **Materialize on profile** | Load Materialize JS on profile for toasts | Currently `profileToast()` → `alert` |
+| **Firebase rules docs** | Document or tighten rules for `tags` arrays and `tagSeries` | Rules not versioned in repo |
+| **Series label edit** | Rename saved comparison lines without re-adding | Would need `updateTagSeries` helper |
+| **Per-series graph mode** | e.g. one line assets-only, another debts-only | Today one global Net Worth / Assets / Debts toggle for all series |
+
+**Original build order (completed through Phase 3):** dashboard tags → profile filter → comparison chart + persistence.
 
 ---
 
@@ -177,14 +269,14 @@ Firebase config (including `apiKey`) is in `js/utility.js`—standard for client
 
 | File | Responsibility |
 |------|----------------|
-| `js/utility.js` | Firebase init, `setDatabase`, `updateData`, `getDataObj`, `formatEntry`, month averages (1/3/6 mo), profile vs main chart package loading |
+| `js/utility.js` | Firebase init, `setDatabase`, `updateData`, tags CRUD/normalize, `sumTaggedEntries`, `tagSeries` CRUD, chart row builders, `appUrl`/`assetUrl`, profile photo helpers, month averages (1/3/6 mo) |
 | `js/main.js` | Auth routing, `page` / `headerModule` / `mainModule`, email verification on first login |
 | `js/login.js` | Firebase UI config, login layout |
 | `js/sidebar.js` | Side nav VTree, `populateNetWorthValues`, `drawLineGraph`, `drawGraph` (pie, main app) |
 | `js/modal.js` | Add/update/remove handlers (`addClick`, `updateClick`, `removeClick`), validation toasts |
 | `js/carousel.js` | Materialize carousel for month selection; updates `userData.currentMonth` / `currentYear` |
 | `js/plugins.js` | Third-party UI behavior (very large); avoid editing unless necessary |
-| `profile/js/main.js` | Profile layout, `populateNetWorthGraph`, profile line/pie charts, profile auth URL handling |
+| `profile/js/main.js` | Profile layout, tag filter bar, comparison series UI/chart, `populateNetWorthGraph`, profile line/pie charts, profile auth URL handling |
 
 **Edit workflow:** change files under `js/` (and `profile/js/`), run Gulp, commit updated `src/uglify*.js` if that is the project convention (built artifacts are present in the repo).
 
@@ -240,6 +332,10 @@ npm start
 | Change month | Header carousel arrows | Updates current month, reloads data/charts |
 | View profile | Side nav profile image | `profile/` with own uid |
 | Share profile | `profile/?user={uid}` | Read-only view of that user’s history |
+| Tag an entry | Add/Edit modal | Comma-separated tags → `entries/{month}/tags/...` |
+| Filter profile by tags | Profile tag chips | AND filter on totals, pies, main chart |
+| Compare tag groups | Profile **Add line** | Up to 5 saved series in `tagSeries/`, multi-line chart |
+| Flip sign on series | **Flip sign** on comparison line | Toggles `negate` in Firebase |
 
 ---
 
@@ -257,8 +353,9 @@ npm start
 2. **Built artifacts in git** — Production loads `src/uglify*.js`; remember to rebuild after editing `js/`.
 3. **Dev test login** — `?user=test` on the main app auto-signs in with hardcoded `test@test.com` / `joejoe` in `main.js`. Remove or guard before any public fork.
 4. **Mixed paradigms** — Cycle for structure, jQuery for Materialize and many updates. New features should follow existing patterns in the same file/module.
-5. **Missing assets** — References to `img/logo2.png`, `img/anony.jpg`; ensure they exist for local/GitHub Pages hosting.
-6. **Security rules** — Firebase database rules are not versioned here; behavior depends on Firebase console configuration.
+5. **Missing assets** — `img/` may be gitignored locally; app expects `img/logo2.png`, `img/anony.jpg`. Use `assetUrl()` for correct paths from `/profile/`.
+6. **Security rules** — Firebase database rules are not versioned here; behavior depends on Firebase console configuration. Tag arrays and `tagSeries` are client-written like other user data.
+7. **Profile `/profile` URL** — `profile/index.html` redirects to trailing slash; `server.js` does the same locally so `css/main.css` resolves.
 
 ---
 
@@ -269,7 +366,10 @@ npm start
 | Change auth providers | `js/login.js` → `uiConfig.signInOptions` |
 | Change data shape / calculations | `js/utility.js` → `updateData`, `getNetWorth`, `getDataObj` |
 | Change main dashboard layout | `js/main.js`, `js/sidebar.js`, `css/main.css` |
-| Change profile charts | `profile/js/main.js` → `drawLineGraph`, `drawPieGraphs` |
+| Change profile charts | `profile/js/main.js` → `drawLineGraph`, `drawPieGraphs`, `drawTagSeriesChart` |
+| Change tag / filter behavior | `js/utility.js` → `normalizeTags`, `sumTaggedEntries`, `getTagSeriesList`, `updateData` |
+| Change comparison series UX | `profile/js/main.js` → `addTagSeriesFromFilter`, `renderTagSeriesList`, `refreshProfileView` |
+| Change tag chips on dashboard | `js/sidebar.js` → `entryRowHtml`; `js/modal.js` for input |
 | Fix modal validation | `js/modal.js` → `toastMap`, `addClick` |
 | Update dependencies / CDN URLs | `index.html`, `profile/index.html` |
 | Fix local routing | `server.js` path mappings |
@@ -286,6 +386,8 @@ Lists & sidebar ........ sidebar.js
 Month picker ........... carousel.js
 Login UI ............... login.js
 Profile-only UI ........ profile/js/main.js
+Tags / series logic .... utility.js (shared by main + profile bundles)
+Tag filter / chart UI .. profile/js/main.js, profile/css/main.css
 Styles ................. css/main.css, css/login.css, profile/css/main.css
 Build .................. gulpfile.js → src/
 Local server ........... server.js
@@ -294,4 +396,4 @@ Legal .................. terms.html
 
 ---
 
-*Last documented from repository review: May 2026.*
+*Last updated: May 2026 (tags Phases 1–3, profile analysis, comparison chart).*
