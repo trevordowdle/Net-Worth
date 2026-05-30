@@ -17,11 +17,12 @@ var carouselModule;
       return -1;
     });
     Rx.Observable.merge(clickStreamRight$, clickStreamLeft$).subscribe(function (indicator) {
+      utility.clearMonthUrlParamIfNeeded();
       setTimeout(function () {
         carousel.carousel('next', indicator);
       }, 250);
     });
-    carouselItems = getCarouselDateList();
+    carouselItems = getCarouselDateList(utility.getInitialCarouselDateString());
     vtree$ = Rx.Observable.of(div('.carousel .carousel-slider .center .noselect', carouselItems.map(function (data) {
       return carouselItemTree$(sources, {
         month: data.month,
@@ -97,7 +98,10 @@ var carouselModule;
         no_wrap: false // Don't wrap around and cycle through items.
       };
       options = $.extend(defaults, options);
-      var timeFrameInfo = utility.getDateObject();
+      var timeFrameInfo = {
+        month: userData.currentMonth,
+        year: userData.currentYear
+      };
       return this.each(function () {
         var images, offset, center, pressed, dim, count, reference, referenceY, amplitude, target, velocity, xform, frame, timestamp, ticker, dragged, vertical_dragged;
 
@@ -206,6 +210,7 @@ var carouselModule;
                 element.attrs.data.year = dateList[index].year;
                 element.firstChild.innerText = utility.monthMap[element.attrs.data.month] + ' ' + element.attrs.data.year;
               });
+              utility.clearMonthUrlParamIfNeeded();
               utility.populateValues(); // other logic here.
             }
             el.style[xform] = alignment + ' translateX(' + -delta / 2 + 'px)' + ' translateX(' + dir * options.shift * tween * i + 'px)' + ' translateZ(' + options.dist * tween + 'px)';
@@ -5316,6 +5321,49 @@ var utility = function (profile) {
       }
       // Trailing slash so profile/css/main.css resolves (not /css/main.css)
       return (base ? base + '/' : '/') + path + '/';
+    },
+    parseMonthUrlParam: function parseMonthUrlParam() {
+      var params = new URLSearchParams(location.search);
+      var raw = params.get('month');
+      var month, year;
+      if (!raw) {
+        return null;
+      }
+      raw = String(raw).trim().replace('-', '');
+      if (!/^\d{6}$/.test(raw)) {
+        return null;
+      }
+      month = parseInt(raw.substring(4), 10);
+      year = parseInt(raw.substring(0, 4), 10);
+      if (month < 1 || month > 12) {
+        return null;
+      }
+      return {
+        month: month,
+        year: year,
+        ref: raw
+      };
+    },
+    getInitialCarouselDateString: function getInitialCarouselDateString() {
+      var parsed = this.parseMonthUrlParam();
+      if (!parsed) {
+        return null;
+      }
+      userData.clearMonthParamWhenNavigating = true;
+      return parsed.month + '/01/' + parsed.year;
+    },
+    clearMonthUrlParamIfNeeded: function clearMonthUrlParamIfNeeded() {
+      if (!userData.clearMonthParamWhenNavigating) {
+        return;
+      }
+      userData.clearMonthParamWhenNavigating = false;
+      var params = new URLSearchParams(location.search);
+      if (!params.has('month')) {
+        return;
+      }
+      params["delete"]('month');
+      var qs = params.toString();
+      history.replaceState(null, '', location.pathname + (qs ? '?' + qs : '') + location.hash);
     },
     assetUrl: function assetUrl(suffix) {
       var base = this.getAppBasePath();

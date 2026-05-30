@@ -62,6 +62,49 @@ var utility = function (profile) {
       // Trailing slash so profile/css/main.css resolves (not /css/main.css)
       return (base ? base + '/' : '/') + path + '/';
     },
+    parseMonthUrlParam: function parseMonthUrlParam() {
+      var params = new URLSearchParams(location.search);
+      var raw = params.get('month');
+      var month, year;
+      if (!raw) {
+        return null;
+      }
+      raw = String(raw).trim().replace('-', '');
+      if (!/^\d{6}$/.test(raw)) {
+        return null;
+      }
+      month = parseInt(raw.substring(4), 10);
+      year = parseInt(raw.substring(0, 4), 10);
+      if (month < 1 || month > 12) {
+        return null;
+      }
+      return {
+        month: month,
+        year: year,
+        ref: raw
+      };
+    },
+    getInitialCarouselDateString: function getInitialCarouselDateString() {
+      var parsed = this.parseMonthUrlParam();
+      if (!parsed) {
+        return null;
+      }
+      userData.clearMonthParamWhenNavigating = true;
+      return parsed.month + '/01/' + parsed.year;
+    },
+    clearMonthUrlParamIfNeeded: function clearMonthUrlParamIfNeeded() {
+      if (!userData.clearMonthParamWhenNavigating) {
+        return;
+      }
+      userData.clearMonthParamWhenNavigating = false;
+      var params = new URLSearchParams(location.search);
+      if (!params.has('month')) {
+        return;
+      }
+      params["delete"]('month');
+      var qs = params.toString();
+      history.replaceState(null, '', location.pathname + (qs ? '?' + qs : '') + location.hash);
+    },
     assetUrl: function assetUrl(suffix) {
       var base = this.getAppBasePath();
       var path = (suffix || '').replace(/^\//, '');
@@ -1025,7 +1068,7 @@ function headerModule(sources) {
     userData.monthString = utility.getMonthString();
     refreshProfileView();
   });
-  sources.DOM.select('.tag-filter-bar').events('click').subscribe(function (ev) {
+  sources.DOM.select('.tag-filter-bar, .tag-comparison-section').events('click').subscribe(function (ev) {
     var $target = $(ev.target).closest('.tag-filter-chip, .tag-filter-clear, .tag-filter-add-line, .tag-series-remove, .tag-series-negate, .tag-filter-match-any, .tag-filter-match-all');
     if (!$target.length) {
       return;
@@ -1065,6 +1108,13 @@ function headerModule(sources) {
       utility.removeTagSeries($target.attr('data-id'));
       refreshProfileView();
     }
+  });
+  sources.DOM.select('.tag-comparison-section').events('click').subscribe(function (ev) {
+    var $target = $(ev.target).closest('.tag-comparison-toggle');
+    if (!$target.length) {
+      return;
+    }
+    setComparisonPanelOpen(!isComparisonPanelOpen());
   });
   var vtree$ = Rx.Observable.of(div([div('.nav.profile-header', [div('.nav-wrapper', [div('.logout', {
     style: {
@@ -1116,11 +1166,13 @@ function headerModule(sources) {
     }
   }, [div('.col .s12 .m12 .l12', [div('.tag-filter-header', [span('.tag-filter-title', 'Filter by tags'), span('.tag-filter-actions', [button('.tag-filter-add-line .btn-flat', 'Add line'), button('.tag-filter-clear .btn-flat', 'Clear')])]), p('.tag-filter-hint .grey-text', 'Select tags to filter this month. Match mode applies to the filter and new comparison lines.'), div('.tag-filter-match-mode', [span('.tag-filter-match-label', 'Match:'), button('.tag-filter-match-any .btn-flat .active', 'Any tag'), button('.tag-filter-match-all .btn-flat', 'All tags')]), label('.tag-series-add-negate-wrap', [input('.tag-series-add-negate', {
     type: 'checkbox'
-  }), span(' Flip sign for next line (invert positive/negative on chart)')]), div('.tag-filter-chips'), div('.tag-filter-matches'), div('.tag-series-list')])]), br(), div('.row .tag-series-chart-row', {
+  }), span(' Flip sign for next line (invert positive/negative on chart)')]), div('.tag-filter-chips'), div('.tag-filter-matches')])]), div('.row .tag-comparison-section', {
     style: {
       display: 'none'
     }
-  }, [div('.col .s12 .offset-m1 .m10 .offset-l2 .l8', [p('.tag-series-chart-hint .grey-text', 'Comparison lines (Net Worth / Assets / Debts tabs apply)'), div('.card-panel .tag-series-chart-panel', [div('#curve_chart_compare')])])]), br(), div('.row .profile-charts-row', [div('.col .s12 .m12 .l12 .changeGraph', [button('.netWorthGraph .active .drawn', 'Net Worth'), button('.assetsGraph', 'Assets'), button('.debtsGraph', 'Debts')]), div('.col .s12 .offset-m1 .m10 .offset-l2 .l8', {
+  }, [div('.col .s12 .m12 .l12', [button('.tag-comparison-toggle .btn-flat', {
+    type: 'button'
+  }, [i('.material-icons .tag-comparison-chevron', 'expand_more'), span('.tag-comparison-toggle-label', 'Tag comparison'), span('.tag-comparison-count .grey-text', '')]), div('.tag-comparison-body', [div('.tag-series-list'), div('.tag-comparison-chart-wrap', [p('.tag-series-chart-hint .grey-text', 'Comparison chart (Net Worth / Assets / Debts tabs apply)'), div('.card-panel .tag-series-chart-panel', [div('#curve_chart_compare')])])])])]), br(), div('.row .profile-charts-row', [div('.col .s12 .m12 .l12 .changeGraph', [button('.netWorthGraph .active .drawn', 'Net Worth'), button('.assetsGraph', 'Assets'), button('.debtsGraph', 'Debts')]), div('.col .s12 .offset-m1 .m10 .offset-l2 .l8', {
     style: {
       'padding-left': '20px'
     }
@@ -1180,6 +1232,36 @@ var initApp = function initApp() {
 window.addEventListener('load', function () {
   initApp();
 });
+function isComparisonPanelOpen() {
+  if (userData.comparisonPanelOpen === undefined) {
+    userData.comparisonPanelOpen = utility.getTagSeriesList().length > 0;
+  }
+  return !!userData.comparisonPanelOpen;
+}
+function setComparisonPanelOpen(open) {
+  userData.comparisonPanelOpen = !!open;
+  updateComparisonPanelUI();
+}
+function updateComparisonPanelUI() {
+  var $section = $('.tag-comparison-section');
+  var open = isComparisonPanelOpen();
+  $section.toggleClass('collapsed', !open);
+  $section.find('.tag-comparison-chevron').text(open ? 'expand_less' : 'expand_more');
+  if (open) {
+    drawTagSeriesChart(getLineGraphMode(getActiveGraphTitle()));
+  }
+}
+function renderTagComparisonSection() {
+  var seriesList = utility.getTagSeriesList();
+  var $section = $('.tag-comparison-section');
+  if (!seriesList.length) {
+    $section.hide();
+    return;
+  }
+  $section.show();
+  $section.find('.tag-comparison-count').text('(' + seriesList.length + ' line' + (seriesList.length === 1 ? '' : 's') + ')');
+  updateComparisonPanelUI();
+}
 function refreshProfileView() {
   var dataObj = userData.entries[userData.keys[userData.lookup]];
   populateNetWorthGraph(dataObj);
@@ -1308,6 +1390,7 @@ function addTagSeriesFromFilter() {
   utility.setProfileTagFilter([]);
   $('.tag-filter-chip').removeClass('active');
   $('.tag-series-add-negate').prop('checked', false);
+  setComparisonPanelOpen(true);
   profileToast('Added comparison line: ' + label);
   refreshProfileView();
 }
@@ -1336,21 +1419,23 @@ function renderTagSeriesList() {
 }
 function drawTagSeriesChart(graphMode) {
   var seriesList = utility.getTagSeriesList();
-  var $wrap = $('.tag-series-chart-row');
+  var $section = $('.tag-comparison-section');
+  var $chartWrap = $('.tag-comparison-chart-wrap');
   var $el = $('#curve_chart_compare');
   var monthKey, chartData, rows, data, width, ratio, options, title, chart, subtitle;
-  if (!seriesList.length || userData.lookup === 0) {
-    $wrap.hide();
+  if (!seriesList.length || userData.lookup === 0 || !isComparisonPanelOpen()) {
+    $chartWrap.hide();
     return;
   }
   monthKey = userData.keys[userData.lookup];
   chartData = utility.buildSeriesChartRows(seriesList, graphMode, monthKey);
   if (!chartData) {
-    $wrap.hide();
+    $chartWrap.hide();
     return;
   }
   rows = chartData.rows;
-  $wrap.show();
+  $section.show();
+  $chartWrap.show();
   $el.show();
   data = google.visualization.arrayToDataTable(rows);
   width = $el.parent().width() - 10;
@@ -1568,6 +1653,7 @@ function populateNetWorthGraph(dataObj) {
     renderTagFilterBar();
     renderTagFilterMatches(totals.matches);
     renderTagSeriesList();
+    renderTagComparisonSection();
     networthHeader = document.getElementsByClassName('networth-header')[0];
     networthHeader.getElementsByClassName('nav-title')[0].textContent = userData.monthString;
     networthHeader.getElementsByClassName('networth')[0].getElementsByTagName('span')[0].textContent = formatMoney(totals.net);
@@ -1595,6 +1681,8 @@ function populateNetWorthGraph(dataObj) {
     $('.profile-charts-row .card-panel').css('opacity', 1);
     drawLineGraph(indicator, title);
     drawPieGraphs();
-    drawTagSeriesChart(getLineGraphMode(getActiveGraphTitle()));
+    if (isComparisonPanelOpen()) {
+      drawTagSeriesChart(getLineGraphMode(getActiveGraphTitle()));
+    }
   }
 }

@@ -417,8 +417,77 @@ button.arrow.right:active i:last-child {
 }
 
 /* Tag series comparison (phase 3) */
+.tag-comparison-section {
+  max-width: 900px;
+  margin: 0 auto 8px;
+  position: relative;
+  z-index: 1;
+}
+
+.tag-comparison-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  margin: 0 0 4px 0;
+  text-align: left;
+  color: #424242 !important;
+  background: #fafafa;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+  min-height: 44px;
+}
+
+.tag-comparison-toggle:hover {
+  background: #f5f5f5;
+}
+
+.tag-comparison-chevron {
+  font-size: 22px;
+  color: #757575;
+  transition: transform 0.3s ease;
+}
+
+.tag-comparison-section.collapsed .tag-comparison-chevron {
+  transform: rotate(-90deg);
+}
+
+.tag-comparison-toggle-label {
+  flex: 1;
+}
+
+.tag-comparison-count {
+  font-size: 12px;
+  font-weight: normal;
+}
+
+.tag-comparison-body {
+  overflow: hidden;
+  max-height: 4000px;
+  opacity: 1;
+  transition: max-height 0.35s ease, opacity 0.25s ease, margin 0.35s ease;
+  margin-bottom: 8px;
+}
+
+.tag-comparison-section.collapsed .tag-comparison-body {
+  max-height: 0;
+  opacity: 0;
+  margin-bottom: 0;
+  pointer-events: none;
+}
+
+.tag-comparison-chart-wrap {
+  margin-top: 4px;
+}
+
 .tag-series-list {
-  margin-top: 10px;
+  margin-top: 4px;
+  padding: 0 4px;
 }
 
 .tag-series-list-title {
@@ -428,14 +497,9 @@ button.arrow.right:active i:last-child {
   margin: 0 0 4px 0;
 }
 
-.tag-series-chart-row {
-  max-width: 900px;
-  margin: 0 auto 12px;
-}
-
 .tag-series-chart-hint {
   font-size: 11px;
-  margin: 0 0 6px 12px;
+  margin: 0 0 6px 4px;
 }
 
 .tag-series-saved {

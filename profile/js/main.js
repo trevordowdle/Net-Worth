@@ -126,7 +126,7 @@ function headerModule(sources){
         refreshProfileView();
     });
 
-    sources.DOM.select('.tag-filter-bar').events('click').subscribe(function(ev){
+    sources.DOM.select('.tag-filter-bar, .tag-comparison-section').events('click').subscribe(function(ev){
         var $target = $(ev.target).closest(
             '.tag-filter-chip, .tag-filter-clear, .tag-filter-add-line, .tag-series-remove, .tag-series-negate, .tag-filter-match-any, .tag-filter-match-all'
         );
@@ -168,6 +168,14 @@ function headerModule(sources){
             utility.removeTagSeries($target.attr('data-id'));
             refreshProfileView();
         }
+    });
+
+    sources.DOM.select('.tag-comparison-section').events('click').subscribe(function(ev){
+        var $target = $(ev.target).closest('.tag-comparison-toggle');
+        if(!$target.length){
+            return;
+        }
+        setComparisonPanelOpen(!isComparisonPanelOpen());
     });
 
     let vtree$ = Rx.Observable.of(
@@ -237,16 +245,24 @@ function headerModule(sources){
                         span(' Flip sign for next line (invert positive/negative on chart)')
                     ]),
                     div('.tag-filter-chips'),
-                    div('.tag-filter-matches'),
-                    div('.tag-series-list')
+                    div('.tag-filter-matches')
                 ])
             ]),
-            br(),
-            div('.row .tag-series-chart-row',{style:{display:'none'}},[
-                div('.col .s12 .offset-m1 .m10 .offset-l2 .l8',[
-                    p('.tag-series-chart-hint .grey-text','Comparison lines (Net Worth / Assets / Debts tabs apply)'),
-                    div('.card-panel .tag-series-chart-panel',[
-                        div('#curve_chart_compare')
+            div('.row .tag-comparison-section',{style:{display:'none'}},[
+                div('.col .s12 .m12 .l12',[
+                    button('.tag-comparison-toggle .btn-flat',{type:'button'},[
+                        i('.material-icons .tag-comparison-chevron','expand_more'),
+                        span('.tag-comparison-toggle-label','Tag comparison'),
+                        span('.tag-comparison-count .grey-text','')
+                    ]),
+                    div('.tag-comparison-body',[
+                        div('.tag-series-list'),
+                        div('.tag-comparison-chart-wrap',[
+                            p('.tag-series-chart-hint .grey-text','Comparison chart (Net Worth / Assets / Debts tabs apply)'),
+                            div('.card-panel .tag-series-chart-panel',[
+                                div('#curve_chart_compare')
+                            ])
+                        ])
                     ])
                 ])
             ]),
@@ -342,6 +358,44 @@ let initApp = function() {
 window.addEventListener('load', function() {
     initApp();
 });
+
+function isComparisonPanelOpen(){
+    if(userData.comparisonPanelOpen === undefined){
+        userData.comparisonPanelOpen = utility.getTagSeriesList().length > 0;
+    }
+    return !!userData.comparisonPanelOpen;
+}
+
+function setComparisonPanelOpen(open){
+    userData.comparisonPanelOpen = !!open;
+    updateComparisonPanelUI();
+}
+
+function updateComparisonPanelUI(){
+    var $section = $('.tag-comparison-section');
+    var open = isComparisonPanelOpen();
+    $section.toggleClass('collapsed', !open);
+    $section.find('.tag-comparison-chevron').text(open ? 'expand_less' : 'expand_more');
+    if(open){
+        drawTagSeriesChart(getLineGraphMode(getActiveGraphTitle()));
+    }
+}
+
+function renderTagComparisonSection(){
+    var seriesList = utility.getTagSeriesList();
+    var $section = $('.tag-comparison-section');
+
+    if(!seriesList.length){
+        $section.hide();
+        return;
+    }
+
+    $section.show();
+    $section.find('.tag-comparison-count').text(
+        '(' + seriesList.length + ' line' + (seriesList.length === 1 ? '' : 's') + ')'
+    );
+    updateComparisonPanelUI();
+}
 
 function refreshProfileView(){
     var dataObj = userData.entries[userData.keys[userData.lookup]];
@@ -474,6 +528,7 @@ function addTagSeriesFromFilter(){
     utility.setProfileTagFilter([]);
     $('.tag-filter-chip').removeClass('active');
     $('.tag-series-add-negate').prop('checked', false);
+    setComparisonPanelOpen(true);
     profileToast('Added comparison line: ' + label);
     refreshProfileView();
 }
@@ -510,24 +565,26 @@ function renderTagSeriesList(){
 
 function drawTagSeriesChart(graphMode){
     var seriesList = utility.getTagSeriesList();
-    var $wrap = $('.tag-series-chart-row');
+    var $section = $('.tag-comparison-section');
+    var $chartWrap = $('.tag-comparison-chart-wrap');
     var $el = $('#curve_chart_compare');
     var monthKey, chartData, rows, data, width, ratio, options, title, chart, subtitle;
 
-    if(!seriesList.length || userData.lookup === 0){
-        $wrap.hide();
+    if(!seriesList.length || userData.lookup === 0 || !isComparisonPanelOpen()){
+        $chartWrap.hide();
         return;
     }
 
     monthKey = userData.keys[userData.lookup];
     chartData = utility.buildSeriesChartRows(seriesList, graphMode, monthKey);
     if(!chartData){
-        $wrap.hide();
+        $chartWrap.hide();
         return;
     }
     rows = chartData.rows;
 
-    $wrap.show();
+    $section.show();
+    $chartWrap.show();
     $el.show();
 
     data = google.visualization.arrayToDataTable(rows);
@@ -753,6 +810,7 @@ function populateNetWorthGraph(dataObj){
                 renderTagFilterBar();
                 renderTagFilterMatches(totals.matches);
                 renderTagSeriesList();
+                renderTagComparisonSection();
 
                 networthHeader = document.getElementsByClassName('networth-header')[0];
                 networthHeader.getElementsByClassName('nav-title')[0].textContent = userData.monthString;
@@ -782,7 +840,9 @@ function populateNetWorthGraph(dataObj){
 
                 drawLineGraph(indicator,title);
                 drawPieGraphs();
-                drawTagSeriesChart(getLineGraphMode(getActiveGraphTitle()));
+                if(isComparisonPanelOpen()){
+                    drawTagSeriesChart(getLineGraphMode(getActiveGraphTitle()));
+                }
             }        
 
 }

@@ -320,6 +320,47 @@ npm start
 
 `npm test` is a placeholder (exits with error). No automated test suite in the repo.
 
+### Backup / restore one user (Firebase)
+
+Before bulk tag migrations, snapshot a user’s Realtime Database node:
+
+```bash
+node scripts/backup-user-data.js <firebase-auth-uid>
+```
+
+Writes `backups/{uid}-{timestamp}.json` (gitignored). Example UID for owner data: `yhxzTiGfYRe5j5IpB6Xw2nmZUTJ2`.
+
+**Restore** (overwrites live data for that user — use with care):
+
+```bash
+# Requires write access (Firebase CLI logged in, or PATCH with auth token)
+firebase database:set /yhxzTiGfYRe5j5IpB6Xw2nmZUTJ2 backups/your-backup-file.json --project networth-8b077 --force
+```
+
+Or upload the JSON via [Firebase Console](https://console.firebase.google.com/) → Realtime Database → export/import.
+
+**Security note:** If unauthenticated reads succeed, tighten Realtime Database rules in the Firebase console before any public fork.
+
+### Historical tag backfill
+
+After tagging recent months on the dashboard, copy tags backward for the same entry names:
+
+```bash
+# Preview (from backup or live)
+node scripts/backfill-tags.js --uid <uid> --backup backups/your-backup.json
+
+# Write merged JSON for import (no auth needed)
+node scripts/backfill-tags.js --uid <uid> --backup backups/your-backup.json \
+  --output backups/uid-tags-backfilled.json
+
+# Apply to live DB (writes require auth token)
+node scripts/backfill-tags.js --uid <uid> --apply --id-token "$FIREBASE_ID_TOKEN"
+```
+
+Get a token while signed in: browser console → `firebase.auth().currentUser.getIdToken().then(console.log)`.
+
+**Modes:** `fill-missing` (default) only adds tags where absent; `canonical` also normalizes existing months to the latest tag set for that entry.
+
 ---
 
 ## User Flows (quick reference)
@@ -331,6 +372,7 @@ npm start
 | Edit entry | Hover edit icon on line item | `#modal2` → update |
 | Remove entry | Edit modal “REMOVE” | Sets value `null`, removes DOM node |
 | Change month | Header carousel arrows | Updates current month, reloads data/charts |
+| Jump to month | `?month=YYYYMM` on main app URL | Opens that month; param removed on first carousel navigation |
 | View profile | Side nav profile image | `profile/` with own uid |
 | Share profile | `profile/?user={uid}` | Read-only view of that user’s history |
 | Tag an entry | Add/Edit modal | Comma-separated tags → `entries/{month}/tags/...` |

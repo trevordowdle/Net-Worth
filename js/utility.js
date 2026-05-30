@@ -64,6 +64,45 @@ var utility = function(profile){
             // Trailing slash so profile/css/main.css resolves (not /css/main.css)
             return (base ? base + '/' : '/') + path + '/';
         },
+        parseMonthUrlParam:function(){
+            var params = new URLSearchParams(location.search);
+            var raw = params.get('month');
+            var month, year;
+            if(!raw){
+                return null;
+            }
+            raw = String(raw).trim().replace('-', '');
+            if(!/^\d{6}$/.test(raw)){
+                return null;
+            }
+            month = parseInt(raw.substring(4), 10);
+            year = parseInt(raw.substring(0, 4), 10);
+            if(month < 1 || month > 12){
+                return null;
+            }
+            return {month: month, year: year, ref: raw};
+        },
+        getInitialCarouselDateString:function(){
+            var parsed = this.parseMonthUrlParam();
+            if(!parsed){
+                return null;
+            }
+            userData.clearMonthParamWhenNavigating = true;
+            return parsed.month + '/01/' + parsed.year;
+        },
+        clearMonthUrlParamIfNeeded:function(){
+            if(!userData.clearMonthParamWhenNavigating){
+                return;
+            }
+            userData.clearMonthParamWhenNavigating = false;
+            var params = new URLSearchParams(location.search);
+            if(!params.has('month')){
+                return;
+            }
+            params.delete('month');
+            var qs = params.toString();
+            history.replaceState(null, '', location.pathname + (qs ? '?' + qs : '') + location.hash);
+        },
         assetUrl:function(suffix){
             var base = this.getAppBasePath();
             var path = (suffix || '').replace(/^\//, '');

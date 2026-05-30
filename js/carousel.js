@@ -25,12 +25,13 @@ var carouselModule;
 
       Rx.Observable.merge(clickStreamRight$, clickStreamLeft$)
                    .subscribe((indicator)=>{
+                       utility.clearMonthUrlParamIfNeeded();
                        setTimeout(function(){
                          carousel.carousel('next',indicator);  
                        },250)  
                    });
        
-      carouselItems = getCarouselDateList();
+      carouselItems = getCarouselDateList(utility.getInitialCarouselDateString());
 
       vtree$ = Rx.Observable.of(
                 div('.carousel .carousel-slider .center .noselect',
@@ -113,7 +114,10 @@ var carouselModule;
       };
       options = $.extend(defaults, options);
 
-      var timeFrameInfo = utility.getDateObject();
+      var timeFrameInfo = {
+        month: userData.currentMonth,
+        year: userData.currentYear
+      };
 
       return this.each(function() {
 
@@ -240,6 +244,7 @@ var carouselModule;
                     element.attrs.data.year = dateList[index].year;
                     element.firstChild.innerText = utility.monthMap[element.attrs.data.month] + ' ' + element.attrs.data.year;
                 });
+                utility.clearMonthUrlParamIfNeeded();
                 utility.populateValues(); // other logic here.
 
             }
