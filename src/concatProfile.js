@@ -323,7 +323,7 @@ var utility = function (profile) {
         userData.entries[refDate][entry.type] = {};
       }
       if (entry.value === null) {
-        userData.entries[refDate][entry.type][entry.name] = null;
+        delete userData.entries[refDate][entry.type][entry.name];
       } else {
         userData.entries[refDate][entry.type][entry.name] = entry.value;
       }
@@ -369,10 +369,6 @@ var utility = function (profile) {
     populateValues: function populateValues(fromUpdate) {
       var dataObj = this.getDataObj();
       if (fromUpdate && $('.side-nav li:nth-child(2) .entry-grey').length) {
-        if (!dataObj.entryGrey) {
-          populateNetWorthValues(dataObj, $assetEl, $debtEl);
-          return;
-        }
         this.updateNetWorthValues(dataObj);
         drawLineGraph(true);
         return false;

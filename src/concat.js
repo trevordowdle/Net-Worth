@@ -817,16 +817,19 @@ var updateClick = function updateClick(ev) {
   entry = utility.formatEntry(entry);
   entry.tags = utility.normalizeTags($modal.find('.entry-tags-input').val());
   var item = $modal.data('item');
+  var labelEl = item.querySelector('.entry-label');
   var valueEl = item.querySelector('.entry-value');
   if (valueEl) {
     valueEl.textContent = entry.display;
     valueEl.className = 'entry-value ' + entry["class"];
   }
+  if (labelEl) {
+    labelEl.classList.remove('entry-grey');
+  }
   item.setAttribute('data-tags', entry.tags.join(','));
   item.querySelector('.entry-tags') && item.querySelector('.entry-tags').remove();
   if (entry.tags.length) {
-    var isGrey = item.querySelector('.entry-label').classList.contains('entry-grey');
-    $(item.querySelector('.entry-row-main')).after(utility.formatTagsHtml(entry.tags, isGrey));
+    $(item.querySelector('.entry-row-main')).after(utility.formatTagsHtml(entry.tags, false));
   }
   utility.updateData(entry);
   $modal.closeModal();
@@ -837,14 +840,26 @@ var removeClick = function removeClick(ev) {
     $inputs,
     entry = {},
     element,
-    edit;
+    itemClass;
   $modal = $(ev.currentTarget.closest('.modal'));
+  element = $modal.data('item');
+  if (!element) {
+    return;
+  }
+  itemClass = element.parentElement.className;
+  if (itemClass.indexOf('asset-items') >= 0) {
+    entry.type = 'Asset';
+  } else if (itemClass.indexOf('debt-items') >= 0) {
+    entry.type = 'Debt';
+  }
   $inputs = $modal.find('.modal-content input');
   $inputs.each(function (index, el) {
+    if (el.classList.contains('entry-tags-input')) {
+      return;
+    }
     entry[el.id || 'type'] = el.value;
   });
   entry = utility.formatEntry(entry);
-  element = $modal.data('item');
   element.parentNode.removeChild(element);
   entry.value = null;
   utility.updateData(entry);
@@ -5247,6 +5262,9 @@ function drawGraph(obj, type) {
 function addValues(valueObj, prefix, type, $el, dataObj) {
   if (valueObj) {
     Object.keys(valueObj).map(function (key) {
+      if (valueObj[key] === null || valueObj[key] === undefined) {
+        return;
+      }
       var entry = utility.formatEntry({
         type: type,
         name: key,
@@ -5583,7 +5601,7 @@ var utility = function (profile) {
         userData.entries[refDate][entry.type] = {};
       }
       if (entry.value === null) {
-        userData.entries[refDate][entry.type][entry.name] = null;
+        delete userData.entries[refDate][entry.type][entry.name];
       } else {
         userData.entries[refDate][entry.type][entry.name] = entry.value;
       }
@@ -5629,10 +5647,6 @@ var utility = function (profile) {
     populateValues: function populateValues(fromUpdate) {
       var dataObj = this.getDataObj();
       if (fromUpdate && $('.side-nav li:nth-child(2) .entry-grey').length) {
-        if (!dataObj.entryGrey) {
-          populateNetWorthValues(dataObj, $assetEl, $debtEl);
-          return;
-        }
         this.updateNetWorthValues(dataObj);
         drawLineGraph(true);
         return false;

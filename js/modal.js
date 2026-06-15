@@ -203,16 +203,19 @@ var updateClick = (ev)=>{
     entry = utility.formatEntry(entry);
     entry.tags = utility.normalizeTags($modal.find('.entry-tags-input').val());
     var item = $modal.data('item');
+    var labelEl = item.querySelector('.entry-label');
     var valueEl = item.querySelector('.entry-value');
     if (valueEl) {
         valueEl.textContent = entry.display;
         valueEl.className = 'entry-value ' + entry.class;
     }
+    if (labelEl) {
+        labelEl.classList.remove('entry-grey');
+    }
     item.setAttribute('data-tags', entry.tags.join(','));
     item.querySelector('.entry-tags') && item.querySelector('.entry-tags').remove();
     if(entry.tags.length){
-        var isGrey = item.querySelector('.entry-label').classList.contains('entry-grey');
-        $(item.querySelector('.entry-row-main')).after(utility.formatTagsHtml(entry.tags, isGrey));
+        $(item.querySelector('.entry-row-main')).after(utility.formatTagsHtml(entry.tags, false));
     }
     utility.updateData(entry);
     $modal.closeModal();
@@ -220,14 +223,27 @@ var updateClick = (ev)=>{
 };
 
 var removeClick = (ev)=>{
-    let $modal, $inputs, entry = {}, element, edit;
+    let $modal, $inputs, entry = {}, element, itemClass;
     $modal = $(ev.currentTarget.closest('.modal'));
+    element = $modal.data('item');
+    if(!element){
+        return;
+    }
+    itemClass = element.parentElement.className;
+    if(itemClass.indexOf('asset-items') >= 0){
+        entry.type = 'Asset';
+    }
+    else if(itemClass.indexOf('debt-items') >= 0){
+        entry.type = 'Debt';
+    }
     $inputs = $modal.find('.modal-content input');
     $inputs.each((index,el)=>{
+      if(el.classList.contains('entry-tags-input')){
+        return;
+      }
       entry[el.id || 'type'] = el.value;
     });
     entry = utility.formatEntry(entry);
-    element = $modal.data('item');
     element.parentNode.removeChild(element);
     entry.value = null;
     utility.updateData(entry);

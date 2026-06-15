@@ -296,6 +296,9 @@ function drawGraph(obj,type){
 function addValues(valueObj,prefix,type,$el,dataObj){ 
     if(valueObj){
         Object.keys(valueObj).map(function(key){
+            if(valueObj[key] === null || valueObj[key] === undefined){
+                return;
+            }
             let entry = utility.formatEntry({type:type,name:key,value:valueObj[key]});
             entry.grey = dataObj.entryGrey ? 'entry-grey' : '';
             entry.tags = utility.getTagsForDisplay(type, key, dataObj);
