@@ -157,6 +157,7 @@ function populateNetWorthValues(dataObj,$elAsset,$elDebt){
             }
             handleNetworthAvgDisplay(networthInfo,dataObj.threeMo,'three-month');
             handleNetworthAvgDisplay(networthInfo,dataObj.sixMo,'six-month');
+            handleNetworthAvgDisplay(networthInfo,dataObj.twelveMo,'twelve-month');
 
             setTimeout(function(){
                 $('.networth-header .networth').addClass('transition');

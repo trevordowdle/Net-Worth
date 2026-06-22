@@ -456,10 +456,13 @@ var utility = function(profile){
 
              entryKeys = Object.keys(userData.entries);
              entryIndex = entryKeys.indexOf(refString);
-             if(entryIndex >= 6){ //calculate 6 mo average
+             if(entryIndex >= 12){
+                this.calculateNetworthAvg(entryKeys.slice(entryIndex-12,entryIndex+1),dataObj);
+             }
+             else if(entryIndex >= 6){
                 this.calculateNetworthAvg(entryKeys.slice(entryIndex-6,entryIndex+1),dataObj);
              }
-             else if(entryIndex >= 3){ //calculate 3 mo average
+             else if(entryIndex >= 3){
                 this.calculateNetworthAvg(entryKeys.slice(entryIndex-3,entryIndex+1),dataObj);
              }
              else if(entryIndex >= 1){
@@ -469,7 +472,7 @@ var utility = function(profile){
              return dataObj;
         },  
         calculateNetworthAvg(entries,dataObj){
-            let sum = 0, threeMo, sixMo, oneMo, fractionIndicator;
+            let sum = 0, threeMo, sixMo, twelveMo, oneMo, fractionIndicator;
             entries.reverse().map((entry,index)=>{
                 let entryData = userData.entries[entry];
                 if(index+1 < entries.length){
@@ -498,10 +501,16 @@ var utility = function(profile){
                     fractionIndicator = this.getFractionIndicator(sixMo);
                     sixMo = sixMo.toLocaleString(undefined, {maximumFractionDigits: fractionIndicator, minimumFractionDigits: fractionIndicator});
                 }
+                if(index === 11){
+                    twelveMo = sum/12;
+                    fractionIndicator = this.getFractionIndicator(twelveMo);
+                    twelveMo = twelveMo.toLocaleString(undefined, {maximumFractionDigits: fractionIndicator, minimumFractionDigits: fractionIndicator});
+                }
             });
             dataObj.oneMo = oneMo;
             dataObj.threeMo = threeMo;
             dataObj.sixMo = sixMo;
+            dataObj.twelveMo = twelveMo;
             //userData
         },
         getFractionIndicator(num){

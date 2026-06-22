@@ -449,11 +449,11 @@ var utility = function (profile) {
       }
       entryKeys = Object.keys(userData.entries);
       entryIndex = entryKeys.indexOf(refString);
-      if (entryIndex >= 6) {
-        //calculate 6 mo average
+      if (entryIndex >= 12) {
+        this.calculateNetworthAvg(entryKeys.slice(entryIndex - 12, entryIndex + 1), dataObj);
+      } else if (entryIndex >= 6) {
         this.calculateNetworthAvg(entryKeys.slice(entryIndex - 6, entryIndex + 1), dataObj);
       } else if (entryIndex >= 3) {
-        //calculate 3 mo average
         this.calculateNetworthAvg(entryKeys.slice(entryIndex - 3, entryIndex + 1), dataObj);
       } else if (entryIndex >= 1) {
         this.calculateNetworthAvg(entryKeys.slice(entryIndex - 1, entryIndex + 1), dataObj);
@@ -465,6 +465,7 @@ var utility = function (profile) {
       var sum = 0,
         threeMo,
         sixMo,
+        twelveMo,
         oneMo,
         fractionIndicator;
       entries.reverse().map(function (entry, index) {
@@ -504,10 +505,19 @@ var utility = function (profile) {
             minimumFractionDigits: fractionIndicator
           });
         }
+        if (index === 11) {
+          twelveMo = sum / 12;
+          fractionIndicator = _this.getFractionIndicator(twelveMo);
+          twelveMo = twelveMo.toLocaleString(undefined, {
+            maximumFractionDigits: fractionIndicator,
+            minimumFractionDigits: fractionIndicator
+          });
+        }
       });
       dataObj.oneMo = oneMo;
       dataObj.threeMo = threeMo;
       dataObj.sixMo = sixMo;
+      dataObj.twelveMo = twelveMo;
       //userData
     },
     getFractionIndicator: function getFractionIndicator(num) {

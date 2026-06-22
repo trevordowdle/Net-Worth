@@ -149,21 +149,27 @@ sources.DOM.select('.logout')
                         div('#curve_chart')
                     ]),
                     div('.row .networth-info',{style: {visibility: 'hidden'}},[
-                        div('.col .s4 .m4 .l4 .one-month',[
+                        div('.col .s6 .m3 .l3 .one-month',[
                             br(),
                             label('1 mo change:'),
                             span({style: {'font-size':'12px'}}),
                             br()
                         ]),
-                        div('.col .s4 .m4 .l4 .three-month',[
+                        div('.col .s6 .m3 .l3 .three-month',[
                             br(),
                             label('3 mo net avg:'),
                             span({style: {'font-size':'12px'}}),
                             br()
                         ]),
-                        div('.col .s4 .m4 .l4 .six-month',[
+                        div('.col .s6 .m3 .l3 .six-month',[
                             br(),
                             label('6 mo net avg:'),
+                            span({style: {'font-size':'12px'}}),
+                            br()
+                        ]),
+                        div('.col .s6 .m3 .l3 .twelve-month',[
+                            br(),
+                            label('12 mo net avg:'),
                             span({style: {'font-size':'12px'}}),
                             br()
                         ])

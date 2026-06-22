@@ -643,15 +643,19 @@ function mainModule(sources) {
     style: {
       visibility: 'hidden'
     }
-  }, [div('.col .s4 .m4 .l4 .one-month', [br(), label('1 mo change:'), span({
+  }, [div('.col .s6 .m3 .l3 .one-month', [br(), label('1 mo change:'), span({
     style: {
       'font-size': '12px'
     }
-  }), br()]), div('.col .s4 .m4 .l4 .three-month', [br(), label('3 mo net avg:'), span({
+  }), br()]), div('.col .s6 .m3 .l3 .three-month', [br(), label('3 mo net avg:'), span({
     style: {
       'font-size': '12px'
     }
-  }), br()]), div('.col .s4 .m4 .l4 .six-month', [br(), label('6 mo net avg:'), span({
+  }), br()]), div('.col .s6 .m3 .l3 .six-month', [br(), label('6 mo net avg:'), span({
+    style: {
+      'font-size': '12px'
+    }
+  }), br()]), div('.col .s6 .m3 .l3 .twelve-month', [br(), label('12 mo net avg:'), span({
     style: {
       'font-size': '12px'
     }
@@ -5145,6 +5149,7 @@ function populateNetWorthValues(dataObj, $elAsset, $elDebt) {
     }
     handleNetworthAvgDisplay(networthInfo, dataObj.threeMo, 'three-month');
     handleNetworthAvgDisplay(networthInfo, dataObj.sixMo, 'six-month');
+    handleNetworthAvgDisplay(networthInfo, dataObj.twelveMo, 'twelve-month');
     setTimeout(function () {
       $('.networth-header .networth').addClass('transition');
       setTimeout(function () {
@@ -5727,11 +5732,11 @@ var utility = function (profile) {
       }
       entryKeys = Object.keys(userData.entries);
       entryIndex = entryKeys.indexOf(refString);
-      if (entryIndex >= 6) {
-        //calculate 6 mo average
+      if (entryIndex >= 12) {
+        this.calculateNetworthAvg(entryKeys.slice(entryIndex - 12, entryIndex + 1), dataObj);
+      } else if (entryIndex >= 6) {
         this.calculateNetworthAvg(entryKeys.slice(entryIndex - 6, entryIndex + 1), dataObj);
       } else if (entryIndex >= 3) {
-        //calculate 3 mo average
         this.calculateNetworthAvg(entryKeys.slice(entryIndex - 3, entryIndex + 1), dataObj);
       } else if (entryIndex >= 1) {
         this.calculateNetworthAvg(entryKeys.slice(entryIndex - 1, entryIndex + 1), dataObj);
@@ -5743,6 +5748,7 @@ var utility = function (profile) {
       var sum = 0,
         threeMo,
         sixMo,
+        twelveMo,
         oneMo,
         fractionIndicator;
       entries.reverse().map(function (entry, index) {
@@ -5782,10 +5788,19 @@ var utility = function (profile) {
             minimumFractionDigits: fractionIndicator
           });
         }
+        if (index === 11) {
+          twelveMo = sum / 12;
+          fractionIndicator = _this.getFractionIndicator(twelveMo);
+          twelveMo = twelveMo.toLocaleString(undefined, {
+            maximumFractionDigits: fractionIndicator,
+            minimumFractionDigits: fractionIndicator
+          });
+        }
       });
       dataObj.oneMo = oneMo;
       dataObj.threeMo = threeMo;
       dataObj.sixMo = sixMo;
+      dataObj.twelveMo = twelveMo;
       //userData
     },
     getFractionIndicator: function getFractionIndicator(num) {
